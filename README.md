@@ -6,7 +6,7 @@
 [![CI](https://img.shields.io/github/actions/workflow/status/Doekse/homey-energy-dongle-ws/ci.yml?branch=main)](https://github.com/Doekse/homey-energy-dongle-ws/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/Doekse/homey-energy-dongle-ws/blob/HEAD/LICENSE)
 
-Async Python client for the **Homey Energy Dongle** WebSocket API. It streams DSMR smart-meter data in three layers: raw WebSocket payloads, complete telegram strings, or parsed `[dsmr_parser](https://pypi.org/project/dsmr-parser/)` `Telegram` objects. The library is **standalone** (not Home Assistant–specific).
+Async Python client for the **Homey Energy Dongle** WebSocket API. It streams DSMR smart-meter data in three layers: raw WebSocket payloads, complete telegram strings, or parsed `[dsmr_parser](https://pypi.org/project/dsmr-parser/)` `Telegram` objects.
 
 ## Prerequisites
 
@@ -21,8 +21,6 @@ See Athom’s [Homey Energy Dongle WebSocket example](https://github.com/athombv
 ```bash
 pip install homey-energy-dongle-ws
 ```
-
-`zeroconf` is a **core** dependency so mDNS discovery works with a normal install.
 
 Or install from Git:
 
@@ -66,7 +64,7 @@ asyncio.run(main())
 
 **TXT records (mDNS):**
 
-- `**p`** — WebSocket path (e.g. `/ws`). If **missing**, the library sets `ws_path` to `None` (Athom: WebSocket not advertised / Local API off).
+- `**p`** — WebSocket path (e.g. `/ws`). If **missing**, the library sets `ws_path` to `None` (WebSocket not advertised / Local API off).
 - `**v`** — Version string (`DiscoveredEnergyDongle.version`). Full decoded TXT is in `**DiscoveredEnergyDongle.txt`**.
 
 **Firewall / network:** the client host must allow **mDNS** (UDP **5353** inbound/outbound) and LAN traffic to the Energy Dongle. Routers, VLANs, VPNs, or “guest” Wi‑Fi often block multicast, use manual connection instead.
