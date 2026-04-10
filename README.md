@@ -6,7 +6,7 @@
 [![CI](https://img.shields.io/github/actions/workflow/status/Doekse/homey-energy-dongle-ws/ci.yml?branch=main)](https://github.com/Doekse/homey-energy-dongle-ws/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/Doekse/homey-energy-dongle-ws/blob/HEAD/LICENSE)
 
-Async Python client for the **Homey Energy Dongle** WebSocket API. It streams DSMR smart-meter data in three layers: raw WebSocket payloads, complete telegram strings, or parsed `[dsmr_parser](https://pypi.org/project/dsmr-parser/)` `Telegram` objects.
+Async Python client for the **Homey Energy Dongle** WebSocket API. It streams DSMR smart-meter data in three layers: raw WebSocket payloads, complete telegram strings, or parsed ([dsmr-parser](https://pypi.org/project/dsmr-parser/)) telegram objects.
 
 ## Prerequisites
 
