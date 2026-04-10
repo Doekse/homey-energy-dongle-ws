@@ -1,0 +1,26 @@
+# When __version__ in the package changes on the default branch, creates tag vX.Y.Z
+# and a GitHub Release whose notes are the matching section in CHANGELOG.md.
+# PyPI publish runs from publish-pypi.yml on release published.
+name: Release on version bump
+
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - "src/homey_energy_dongle_ws/__init__.py"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Create tag and GitHub Release if version changed
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 .github/scripts/create_release_on_version_bump.py --repo-root "${GITHUB_WORKSPACE}"
