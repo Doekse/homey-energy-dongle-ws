@@ -1,0 +1,63 @@
+[build-system]
+requires = ["hatchling>=1.24.0"]
+build-backend = "hatchling.build"
+
+[project]
+name = "homey-energy-dongle-ws"
+description = "Async WebSocket client for the Homey Energy Dongle (DSMR smart meter data)."
+readme = "README.md"
+authors = [{ name = "Doekse" }]
+requires-python = ">=3.11"
+license = "MIT"
+license-files = ["LICENSE"]
+keywords = ["homey", "dsmr", "websocket", "smart meter"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Programming Language :: Python :: 3 :: Only",
+    "Topic :: Home Automation",
+]
+dynamic = ["version"]
+dependencies = [
+    "websockets>=12.0",
+    "dsmr-parser>=1.4",
+    "zeroconf>=0.131.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "ruff>=0.8.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/Doekse/homey-energy-dongle-ws"
+Repository = "https://github.com/Doekse/homey-energy-dongle-ws"
+Issues = "https://github.com/Doekse/homey-energy-dongle-ws/issues"
+Changelog = "https://github.com/Doekse/homey-energy-dongle-ws/blob/HEAD/CHANGELOG.md"
+
+[tool.hatch.version]
+path = "src/homey_energy_dongle_ws/__init__.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/homey_energy_dongle_ws"]
+
+[tool.ruff]
+target-version = "py311"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+    "integration: live Energy Dongle tests; set HOMEY_ENERGY_DONGLE_HOST (see CONTRIBUTING.md)",
+    "mdns_live: live mDNS browse on LAN (standard discovery); set HOMEY_MDNS_LIVE=1 (see CONTRIBUTING.md)",
+]
