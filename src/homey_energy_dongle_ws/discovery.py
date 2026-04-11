@@ -15,8 +15,14 @@ from dataclasses import dataclass, field
 from zeroconf import IPVersion, ServiceInfo, ServiceListener, Zeroconf
 from zeroconf.asyncio import AsyncZeroconf
 
-# Zeroconf browse/resolve type; suffix for :func:`service_instance_display_name`.
+# Full DNS-SD registration type (``.local.``) for Zeroconf; the same suffix appears on
+# ``ServiceInfo.name`` and is stripped by :func:`service_instance_display_name`.
 ENERGY_DONGLE_SERVICE_TYPE = "_energydongle._tcp.local."
+
+# Per ``async_get_service_info`` call: scale with ``timeout_s``, cap total wait, and
+# keep a minimum so short browse windows still allow a useful resolve attempt.
+_RESOLVE_TIMEOUT_MS_MAX = 3000
+_RESOLVE_TIMEOUT_MS_MIN = 200
 
 
 def service_instance_display_name(service_name: str) -> str:
@@ -53,11 +59,12 @@ class DiscoveredEnergyDongle:
 
     @property
     def instance_display_name(self) -> str:
+        """DNS-SD instance label for UI (see :func:`service_instance_display_name`)."""
         return service_instance_display_name(self.service_name)
 
 
 def _normalize_ws_path(raw: str | None) -> str | None:
-    """Return a path starting with ``/``, or ``None`` if WebSocket is not advertised."""
+    """Ensure a leading ``/`` for URL path joining; ``None`` when not advertised."""
     if raw is None or raw == "":
         return None
     return raw if raw.startswith("/") else f"/{raw}"
@@ -180,9 +187,8 @@ async def discover_energy_dongles(
 
     Results are **deduplicated** by ``(host, port)``; later updates replace earlier
     entries for the same key (including :attr:`DiscoveredEnergyDongle.service_name`).
-    If a service
-    disappears during the browse window, it is removed when possible (tracked by mDNS
-    instance name). Entries are sorted by ``(host, port)``.
+    If a service disappears during the browse window, it is removed when possible
+    (tracked by mDNS instance name). Entries are sorted by ``(host, port)``.
 
     If TXT key ``p`` is absent, :attr:`DiscoveredEnergyDongle.ws_path` is ``None``
     (Local API / WebSocket may be off). Uses IPv4 addresses when present, otherwise
@@ -199,7 +205,10 @@ async def discover_energy_dongles(
 
     results: dict[tuple[str, int], DiscoveredEnergyDongle] = {}
     lock = asyncio.Lock()
-    resolve_timeout_ms = min(3000, max(200, int(timeout_s * 1000)))
+    resolve_timeout_ms = min(
+        _RESOLVE_TIMEOUT_MS_MAX,
+        max(_RESOLVE_TIMEOUT_MS_MIN, int(timeout_s * 1000)),
+    )
 
     async with AsyncZeroconf(ip_version=IPVersion.All) as aiozc:
         listener = _EnergyDongleListener(
