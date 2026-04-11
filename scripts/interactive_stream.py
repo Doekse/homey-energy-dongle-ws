@@ -54,7 +54,8 @@ def _format_device_line(i: int, d: DiscoveredEnergyDongle) -> str:
     """Build one human-readable line for a discovered dongle (1-based index)."""
     path = d.ws_path if d.ws_path is not None else "(no WebSocket path in mDNS)"
     ver = d.version if d.version is not None else "?"
-    return f"  {i}) {d.host}:{d.port}  path={path}  v={ver}"
+    label = d.instance_display_name
+    return f"  {i}) {label}  {d.host}:{d.port}  path={path}  v={ver}"
 
 
 def _prompt_mdns_device(devices: list[DiscoveredEnergyDongle]) -> tuple[str, int, str]:

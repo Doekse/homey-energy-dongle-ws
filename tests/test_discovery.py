@@ -10,13 +10,13 @@ import pytest
 from zeroconf import ServiceInfo
 
 from homey_energy_dongle_ws.discovery import (
+    ENERGY_DONGLE_SERVICE_TYPE,
     DiscoveredEnergyDongle,
     _energy_dongle_from_service_info,
     _EnergyDongleListener,
     discover_energy_dongles,
+    service_instance_display_name,
 )
-
-_ENERGY_DONGLE_SERVICE_TYPE = "_energydongle._tcp.local."
 
 
 def _sample_service_info(
@@ -29,7 +29,7 @@ def _sample_service_info(
     props = properties if properties is not None else {"p": "ws", "v": "1.0.0"}
     addrs = addresses if addresses is not None else ["192.168.50.10"]
     return ServiceInfo(
-        _ENERGY_DONGLE_SERVICE_TYPE,
+        ENERGY_DONGLE_SERVICE_TYPE,
         name,
         port=port,
         properties=props,
@@ -47,6 +47,8 @@ def test_energy_dongle_from_service_info_normalizes_path_and_txt() -> None:
     assert d.version == "2"
     assert d.txt.get("p") == "ws"
     assert d.txt.get("v") == "2"
+    assert d.service_name == info.name
+    assert d.instance_display_name == service_instance_display_name(info.name)
 
 
 def test_energy_dongle_from_service_info_missing_p_means_no_ws_path() -> None:
@@ -58,7 +60,7 @@ def test_energy_dongle_from_service_info_missing_p_means_no_ws_path() -> None:
 
 def test_energy_dongle_from_service_info_prefers_ipv4() -> None:
     info = ServiceInfo(
-        _ENERGY_DONGLE_SERVICE_TYPE,
+        ENERGY_DONGLE_SERVICE_TYPE,
         "x._energydongle._tcp.local.",
         port=80,
         properties={"p": "/ws"},
@@ -71,7 +73,7 @@ def test_energy_dongle_from_service_info_prefers_ipv4() -> None:
 
 def test_energy_dongle_from_service_info_ipv6_only() -> None:
     info = ServiceInfo(
-        _ENERGY_DONGLE_SERVICE_TYPE,
+        ENERGY_DONGLE_SERVICE_TYPE,
         "x._energydongle._tcp.local.",
         port=8080,
         properties={"p": "/ws"},
@@ -85,7 +87,7 @@ def test_energy_dongle_from_service_info_ipv6_only() -> None:
 
 def test_energy_dongle_from_service_info_no_addresses() -> None:
     info = ServiceInfo(
-        _ENERGY_DONGLE_SERVICE_TYPE,
+        ENERGY_DONGLE_SERVICE_TYPE,
         "x._energydongle._tcp.local.",
         port=80,
         properties={"p": "/ws"},
@@ -126,7 +128,7 @@ def test_discover_energy_dongles_dedupes_by_host_port(
             type_: str,
             listener: object,
         ) -> None:
-            assert type_ == _ENERGY_DONGLE_SERVICE_TYPE
+            assert type_ == ENERGY_DONGLE_SERVICE_TYPE
             self._listener = listener
 
         async def async_remove_all_service_listeners(self) -> None:
@@ -160,8 +162,8 @@ def test_discover_energy_dongles_dedupes_by_host_port(
             assert fake_holder and fake_holder[0]._listener is not None
             listener = fake_holder[0]._listener
             zc = fake_holder[0].zeroconf
-            listener.add_service(zc, _ENERGY_DONGLE_SERVICE_TYPE, info_a.name)
-            listener.add_service(zc, _ENERGY_DONGLE_SERVICE_TYPE, info_b.name)
+            listener.add_service(zc, ENERGY_DONGLE_SERVICE_TYPE, info_a.name)
+            listener.add_service(zc, ENERGY_DONGLE_SERVICE_TYPE, info_b.name)
 
         gathered = await asyncio.gather(task, inject())
         return gathered[0]
@@ -171,6 +173,8 @@ def test_discover_energy_dongles_dedupes_by_host_port(
     assert out[0].host == "192.168.1.1"
     assert out[0].ws_path == "/other"
     assert out[0].version == "9"
+    assert out[0].service_name == info_b.name
+    assert out[0].instance_display_name == service_instance_display_name(info_b.name)
 
 
 def test_listener_remove_service_drops_energy_dongle() -> None:
@@ -196,7 +200,7 @@ def test_listener_remove_service_drops_energy_dongle() -> None:
             lock,
             resolve_timeout_ms=1000,
         )
-        await listener._ingest(_ENERGY_DONGLE_SERVICE_TYPE, info.name)
+        await listener._ingest(ENERGY_DONGLE_SERVICE_TYPE, info.name)
         assert len(results) == 1
         await listener._remove(info.name)
         assert len(results) == 0

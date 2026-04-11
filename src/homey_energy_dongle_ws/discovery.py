@@ -2,8 +2,9 @@
 
 Browses the LAN for advertised Energy Dongles and reads TXT records
 (`p` = WebSocket path, `v` = version). Prefer :func:`discover_energy_dongles` over
-guessing IPs when the client
-is on the same link-local segment and multicast is allowed.
+guessing IPs when the client is on the same link-local segment and multicast is
+allowed. Use :func:`service_instance_display_name` for a UI label from
+``ServiceInfo.name``.
 """
 
 from __future__ import annotations
@@ -14,8 +15,29 @@ from dataclasses import dataclass, field
 from zeroconf import IPVersion, ServiceInfo, ServiceListener, Zeroconf
 from zeroconf.asyncio import AsyncZeroconf
 
-# Fully qualified type name for zeroconf browse / resolve.
-_ENERGY_DONGLE_SERVICE_TYPE = "_energydongle._tcp.local."
+# Zeroconf browse/resolve type; suffix for :func:`service_instance_display_name`.
+ENERGY_DONGLE_SERVICE_TYPE = "_energydongle._tcp.local."
+
+
+def service_instance_display_name(service_name: str) -> str:
+    """Return the DNS-SD *instance* label from a full service instance name.
+
+    ``service_name`` is the FQDN-style string from :attr:`zeroconf.ServiceInfo.name`
+    (e.g. ``<Instance>._energydongle._tcp.local.``; instance text may contain spaces).
+    Removes ``.`` + :data:`ENERGY_DONGLE_SERVICE_TYPE` from the end when present
+    (the form :attr:`~zeroconf.ServiceInfo.name` uses). Empty input returns ``""``.
+
+    Args:
+        service_name: Full DNS-SD service instance name from a browser or resolver.
+
+    Returns:
+        Instance label for display.
+    """
+    if not service_name:
+        return ""
+    suffix = "." + ENERGY_DONGLE_SERVICE_TYPE
+    trimmed = service_name.removesuffix(suffix)
+    return trimmed if trimmed != service_name else service_name
 
 
 @dataclass(frozen=True)
@@ -26,8 +48,12 @@ class DiscoveredEnergyDongle:
     port: int
     ws_path: str | None
     version: str | None
+    service_name: str
     txt: dict[str, str | None] = field(default_factory=dict)
-    """Decoded TXT key/value pairs from the advertisement (e.g. ``p``, ``v``)."""
+
+    @property
+    def instance_display_name(self) -> str:
+        return service_instance_display_name(self.service_name)
 
 
 def _normalize_ws_path(raw: str | None) -> str | None:
@@ -59,6 +85,7 @@ def _energy_dongle_from_service_info(
         port=int(info.port),
         ws_path=_normalize_ws_path(p_raw),
         version=v_raw,
+        service_name=info.name,
         txt=decoded,
     )
 
@@ -152,9 +179,10 @@ async def discover_energy_dongles(
     """Browse for ``_energydongle._tcp`` services and return resolved Energy Dongles.
 
     Results are **deduplicated** by ``(host, port)``; later updates replace earlier
-    entries for the same key. If a service disappears during the browse window, it is
-    removed when possible (tracked by mDNS instance name). Entries are sorted by
-    ``(host, port)``.
+    entries for the same key (including :attr:`DiscoveredEnergyDongle.service_name`).
+    If a service
+    disappears during the browse window, it is removed when possible (tracked by mDNS
+    instance name). Entries are sorted by ``(host, port)``.
 
     If TXT key ``p`` is absent, :attr:`DiscoveredEnergyDongle.ws_path` is ``None``
     (Local API / WebSocket may be off). Uses IPv4 addresses when present, otherwise
@@ -180,7 +208,7 @@ async def discover_energy_dongles(
             lock,
             resolve_timeout_ms=resolve_timeout_ms,
         )
-        await aiozc.async_add_service_listener(_ENERGY_DONGLE_SERVICE_TYPE, listener)
+        await aiozc.async_add_service_listener(ENERGY_DONGLE_SERVICE_TYPE, listener)
         try:
             await asyncio.sleep(timeout_s)
         finally:
