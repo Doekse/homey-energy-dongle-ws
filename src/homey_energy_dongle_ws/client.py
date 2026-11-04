@@ -115,14 +115,22 @@ class EnergyDongleClient:
         ping_timeout_s: float = PING_TIMEOUT_S,
         reconnect_delay_s: float = RECONNECT_DELAY_S,
         reconnect: bool = True,
-        telegram_specification: Mapping[str, Any] = telegram_specifications.V5,
+        telegram_specification: Mapping[str, Any] | None = None,
         apply_checksum_validation: bool = True,
         dsmr_version: str | None = None,
     ) -> None:
+        if dsmr_version is not None and telegram_specification is not None:
+            raise ValueError(
+                "Pass only one of dsmr_version or telegram_specification, not both"
+            )
         if dsmr_version is not None:
             if dsmr_version not in TELEGRAM_SPECIFICATIONS:
                 raise ValueError(f"Unsupported DSMR version: {dsmr_version!r}")
-            telegram_specification = TELEGRAM_SPECIFICATIONS[dsmr_version]
+            resolved_specification = TELEGRAM_SPECIFICATIONS[dsmr_version]
+        elif telegram_specification is not None:
+            resolved_specification = telegram_specification
+        else:
+            resolved_specification = telegram_specifications.V5
         self._host = host
         self._port = port
         self._path = path
@@ -130,7 +138,7 @@ class EnergyDongleClient:
         self._ping_timeout_s = ping_timeout_s
         self._reconnect_delay_s = reconnect_delay_s
         self._reconnect = reconnect
-        self._telegram_specification = telegram_specification
+        self._telegram_specification = resolved_specification
         self._apply_checksum_validation = apply_checksum_validation
         self._stop = asyncio.Event()
         self._stream_lock = asyncio.Lock()

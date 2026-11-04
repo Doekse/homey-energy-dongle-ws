@@ -239,6 +239,15 @@ def test_unknown_dsmr_version_raises() -> None:
         EnergyDongleClient("127.0.0.1", dsmr_version="MSn")
 
 
+def test_dsmr_version_and_telegram_specification_raises() -> None:
+    with pytest.raises(ValueError):
+        EnergyDongleClient(
+            "127.0.0.1",
+            dsmr_version="5",
+            telegram_specification=ts.V5,
+        )
+
+
 def test_from_settings_builds_same_url() -> None:
     s = EnergyDongleConnectionSettings(host="x.test")
     c = EnergyDongleClient.from_settings(s)

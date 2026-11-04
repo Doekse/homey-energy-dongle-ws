@@ -3,10 +3,8 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any
-
-from dsmr_parser import telegram_specifications
 
 from homey_energy_dongle_ws.constants import (
     DEFAULT_PORT,
@@ -32,8 +30,6 @@ class EnergyDongleConnectionSettings:
     ping_timeout_s: float = PING_TIMEOUT_S
     reconnect_delay_s: float = RECONNECT_DELAY_S
     reconnect: bool = True
-    telegram_specification: Mapping[str, Any] = field(
-        default_factory=lambda: telegram_specifications.V5,
-    )
+    telegram_specification: Mapping[str, Any] | None = None
     apply_checksum_validation: bool = True
     dsmr_version: str | None = None
