@@ -8,7 +8,7 @@ from typing import Any
 
 from dsmr_parser import telegram_specifications
 from dsmr_parser.exceptions import InvalidChecksumError, ParseError
-from dsmr_parser.objects import Telegram
+from dsmr_parser.objects import CosemObject, Telegram
 from dsmr_parser.parsers import TelegramParser
 
 from homey_energy_dongle_ws.exceptions import TelegramChecksumError, TelegramParseError
@@ -26,6 +26,14 @@ TELEGRAM_SPECIFICATIONS: Mapping[str, Mapping[str, Any]] = {
     "2.2": telegram_specifications.V2_2,
 }
 DSMR_VERSIONS: tuple[str, ...] = tuple(TELEGRAM_SPECIFICATIONS)
+
+# DSMR 2.2 and 4 field names of the gas meter, with their DSMR 5 M-Bus name.
+_LEGACY_MBUS_NAMES: Mapping[str, str] = {
+    "DEVICE_TYPE": "MBUS_DEVICE_TYPE",
+    "EQUIPMENT_IDENTIFIER_GAS": "MBUS_EQUIPMENT_IDENTIFIER",
+    "HOURLY_GAS_METER_READING": "MBUS_METER_READING",
+    "GAS_METER_READING": "MBUS_METER_READING",
+}
 
 # OBIS id without the channel. Q3D inserts ``*255`` before the value group.
 _OBIS_LINE = re.compile(r"(?m)^[0-9]-[0-9]:([0-9]+(?:\.[0-9]+)*)(?:\*\d+)?\(([^)]*)\)")
@@ -76,14 +84,36 @@ def detect_dsmr_version(telegram: str) -> str | None:
     return None
 
 
+def _alias_legacy_mbus(telegram: Telegram) -> None:
+    """Expose DSMR 2.2 and 4 gas meter fields under the DSMR 5 M-Bus names.
+
+    The aliases are attributes only, so iteration and ``to_json()`` are unchanged.
+    """
+    for device in getattr(telegram, "MBUS_DEVICES", []):
+        for legacy, name in _LEGACY_MBUS_NAMES.items():
+            obj = getattr(device, legacy, None)
+            if obj is None or hasattr(device, name):
+                continue
+            if name == "MBUS_DEVICE_TYPE" and isinstance(obj.value, str):
+                # DSMR 2.2 sends the type as text; DSMR 5 parses it as a number.
+                if not obj.value.isdigit():
+                    continue
+                obj = CosemObject(
+                    obj.obis_id_code, [{"value": int(obj.value), "unit": ""}]
+                )
+            setattr(device, name, obj)
+
+
 def _parse(parser: TelegramParser, telegram_str: str) -> Telegram:
     """Run ``parser.parse`` and map ``dsmr_parser`` errors to library exceptions."""
     try:
-        return parser.parse(telegram_str)
+        telegram = parser.parse(telegram_str)
     except InvalidChecksumError as exc:
         raise TelegramChecksumError("DSMR telegram checksum validation failed") from exc
     except ParseError as exc:
         raise TelegramParseError("Failed to parse DSMR telegram") from exc
+    _alias_legacy_mbus(telegram)
+    return telegram
 
 
 def parse_telegram(
