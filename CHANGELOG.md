@@ -13,6 +13,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `ConnectionLimitError`, `ConnectionLostError`, `HomeyWebSocketError` and `LocalApiDisabledError` are exported from the package root.
 - `dsmr_version` option on `EnergyDongleClient` and `EnergyDongleConnectionSettings` that selects the telegram specification from a DSMR version code (for example `"5"` or `"5B"`), using the same codes as `dsmr_parser`. The supported codes are exported as `DSMR_VERSIONS`.
 
+### Fixed
+
+- Require `websockets>=13.0`, matching the `websockets.asyncio.client` API the client imports.
+
 ## [0.2.0] - 2026-04-11
 
 ### Added

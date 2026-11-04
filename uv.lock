@@ -1,5 +1,5 @@
 version = 1
-revision = 3
+revision = 5
 requires-python = ">=3.11"
 
 [[package]]
@@ -210,7 +210,7 @@ requires-dist = [
     { name = "dsmr-parser", specifier = ">=1.4" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.0" },
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.8.0" },
-    { name = "websockets", specifier = ">=12.0" },
+    { name = "websockets", specifier = ">=13.0" },
     { name = "zeroconf", specifier = ">=0.131.0" },
 ]
 provides-extras = ["dev"]
