@@ -27,6 +27,16 @@ TELEGRAM_SPECIFICATIONS: Mapping[str, Mapping[str, Any]] = {
 DSMR_VERSIONS: tuple[str, ...] = tuple(TELEGRAM_SPECIFICATIONS)
 
 
+def _parse(parser: TelegramParser, telegram_str: str) -> Telegram:
+    """Run ``parser.parse`` and map ``dsmr_parser`` errors to library exceptions."""
+    try:
+        return parser.parse(telegram_str)
+    except InvalidChecksumError as exc:
+        raise TelegramChecksumError("DSMR telegram checksum validation failed") from exc
+    except ParseError as exc:
+        raise TelegramParseError("Failed to parse DSMR telegram") from exc
+
+
 def parse_telegram(
     telegram_str: str,
     *,
@@ -51,13 +61,10 @@ def parse_telegram(
         TelegramChecksumError: When checksum validation fails.
         TelegramParseError: When parsing fails for any other reason.
     """
-    parser = TelegramParser(
-        telegram_specification,
-        apply_checksum_validation=apply_checksum_validation,
+    return _parse(
+        TelegramParser(
+            telegram_specification,
+            apply_checksum_validation=apply_checksum_validation,
+        ),
+        telegram_str,
     )
-    try:
-        return parser.parse(telegram_str)
-    except InvalidChecksumError as exc:
-        raise TelegramChecksumError("DSMR telegram checksum validation failed") from exc
-    except ParseError as exc:
-        raise TelegramParseError("Failed to parse DSMR telegram") from exc

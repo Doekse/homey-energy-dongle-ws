@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- `stream_parsed` builds on `stream_telegrams` and reuses one `TelegramParser` per client instead of assembling and constructing a parser on every telegram.
 - Simplify WebSocket close-code mapping: policy closes are handled in one client helper, and `LocalApiDisabledError` / `ConnectionLimitError` no longer override `__init__`.
 
 ### Fixed

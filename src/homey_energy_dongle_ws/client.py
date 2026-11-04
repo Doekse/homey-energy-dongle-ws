@@ -20,6 +20,7 @@ from typing import Any, Self
 
 from dsmr_parser import telegram_specifications
 from dsmr_parser.objects import Telegram
+from dsmr_parser.parsers import TelegramParser
 from websockets.asyncio.client import ClientConnection, connect
 from websockets.exceptions import ConnectionClosed, InvalidHandshake
 
@@ -38,7 +39,7 @@ from homey_energy_dongle_ws.exceptions import (
     TelegramParseError,
 )
 from homey_energy_dongle_ws.models import EnergyDongleConnectionSettings
-from homey_energy_dongle_ws.parser import TELEGRAM_SPECIFICATIONS, parse_telegram
+from homey_energy_dongle_ws.parser import TELEGRAM_SPECIFICATIONS, _parse
 from homey_energy_dongle_ws.telegram_assembly import TelegramAssembler
 
 logger = logging.getLogger(__name__)
@@ -167,6 +168,10 @@ class EnergyDongleClient:
         self._reconnect = reconnect
         self._telegram_specification = resolved_specification
         self._apply_checksum_validation = apply_checksum_validation
+        self._parser = TelegramParser(
+            resolved_specification,
+            apply_checksum_validation=apply_checksum_validation,
+        )
         self._stop = asyncio.Event()
         self._stream_lock = asyncio.Lock()
         self._ws: ClientConnection | None = None
@@ -292,8 +297,8 @@ class EnergyDongleClient:
     ) -> AsyncIterator[Telegram]:
         """Yield ``dsmr_parser`` :class:`~dsmr_parser.objects.Telegram` objects.
 
-        Uses :func:`~homey_energy_dongle_ws.parser.parse_telegram` with this
-        client's ``telegram_specification`` and ``apply_checksum_validation``.
+        Builds on :meth:`stream_telegrams` and parses each string with the
+        ``TelegramParser`` created in :meth:`__init__`.
 
         By default, parse or checksum failure raises
         :exc:`~homey_energy_dongle_ws.exceptions.TelegramParseError` or
@@ -301,20 +306,15 @@ class EnergyDongleClient:
         stream. With ``skip_parse_errors=True``, bad telegrams are logged and
         skipped so the stream can continue.
         """
-        async with self._stream_lock:
-            assembler = TelegramAssembler()
-            async for chunk in self.iter_raw_bytes():
-                for telegram_str in assembler.feed(chunk):
-                    try:
-                        yield parse_telegram(
-                            telegram_str,
-                            telegram_specification=self._telegram_specification,
-                            apply_checksum_validation=self._apply_checksum_validation,
-                        )
-                    except TelegramParseError as exc:
-                        if not skip_parse_errors:
-                            raise
-                        logger.warning(
-                            "Skipping telegram that failed to parse: %s",
-                            exc,
-                        )
+        async for telegram_str in self.stream_telegrams():
+            try:
+                telegram = _parse(self._parser, telegram_str)
+            except TelegramParseError as exc:
+                if not skip_parse_errors:
+                    raise
+                logger.warning(
+                    "Skipping telegram that failed to parse: %s",
+                    exc,
+                )
+                continue
+            yield telegram

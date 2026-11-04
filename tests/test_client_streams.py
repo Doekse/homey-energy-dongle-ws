@@ -54,12 +54,7 @@ def test_stream_parsed_skip_parse_errors(caplog: pytest.LogCaptureFixture) -> No
         for c in chunks:
             yield c
 
-    def boom(
-        telegram_str: str,
-        *,
-        telegram_specification: object,
-        apply_checksum_validation: bool,
-    ) -> None:
+    def boom(_parser: object, _telegram_str: str) -> None:
         raise TelegramParseError("bad telegram")
 
     async def run() -> None:
@@ -74,7 +69,7 @@ def test_stream_parsed_skip_parse_errors(caplog: pytest.LogCaptureFixture) -> No
                 "iter_raw_bytes",
                 mock_iter_raw_bytes,
             ),
-            patch("homey_energy_dongle_ws.client.parse_telegram", boom),
+            patch("homey_energy_dongle_ws.client._parse", boom),
         ):
             count = 0
             async for _ in client.stream_parsed(skip_parse_errors=True):
