@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- `reconnect` option on `EnergyDongleClient` and `EnergyDongleConnectionSettings`. With `reconnect=False`, a failed connect or any disconnect raises the new `ConnectionLostError` instead of reconnecting silently, so callers can mark the device unavailable and own the retry policy.
+- `ConnectionLimitError`, `ConnectionLostError`, `HomeyWebSocketError` and `LocalApiDisabledError` are exported from the package root.
+
 ## [0.2.0] - 2026-04-11
 
 ### Added

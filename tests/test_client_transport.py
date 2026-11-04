@@ -13,6 +13,7 @@ from homey_energy_dongle_ws.client import EnergyDongleClient, build_ws_url
 from homey_energy_dongle_ws.constants import RECONNECT_DELAY_S
 from homey_energy_dongle_ws.exceptions import (
     ConnectionLimitError,
+    ConnectionLostError,
     HomeyWebSocketError,
     LocalApiDisabledError,
     _raise_for_homey_close,
@@ -172,6 +173,53 @@ def test_reconnect_uses_reconnect_delay_after_oserror() -> None:
     asyncio.run(run())
 
     assert sleeps and sleeps[0] == RECONNECT_DELAY_S
+
+
+def test_no_reconnect_raises_on_connect_failure() -> None:
+    class ConnectCtx:
+        async def __aenter__(self) -> object:
+            raise OSError("connection refused")
+
+        async def __aexit__(self, *a: object) -> None:
+            return None
+
+    def mock_connect(*a: object, **k: object) -> ConnectCtx:
+        return ConnectCtx()
+
+    async def run() -> None:
+        client = EnergyDongleClient("127.0.0.1", reconnect=False)
+        with patch("homey_energy_dongle_ws.client.connect", mock_connect):
+            with pytest.raises(ConnectionLostError):
+                await client.iter_raw_bytes().__anext__()
+
+    asyncio.run(run())
+
+
+def test_no_reconnect_raises_on_clean_close() -> None:
+    class ClosedSocket:
+        def __aiter__(self) -> ClosedSocket:
+            return self
+
+        async def __anext__(self) -> bytes:
+            raise StopAsyncIteration
+
+    class ConnectCtx:
+        async def __aenter__(self) -> ClosedSocket:
+            return ClosedSocket()
+
+        async def __aexit__(self, *a: object) -> None:
+            return None
+
+    def mock_connect(*a: object, **k: object) -> ConnectCtx:
+        return ConnectCtx()
+
+    async def run() -> None:
+        client = EnergyDongleClient("127.0.0.1", reconnect=False)
+        with patch("homey_energy_dongle_ws.client.connect", mock_connect):
+            with pytest.raises(ConnectionLostError):
+                await client.iter_raw_bytes().__anext__()
+
+    asyncio.run(run())
 
 
 def test_from_settings_builds_same_url() -> None:

@@ -31,6 +31,7 @@ class EnergyDongleConnectionSettings:
     ping_interval_s: float = PING_INTERVAL_S
     ping_timeout_s: float = PING_TIMEOUT_S
     reconnect_delay_s: float = RECONNECT_DELAY_S
+    reconnect: bool = True
     telegram_specification: Mapping[str, Any] = field(
         default_factory=lambda: telegram_specifications.V5,
     )

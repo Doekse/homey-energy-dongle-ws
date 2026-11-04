@@ -32,6 +32,7 @@ from homey_energy_dongle_ws.constants import (
 )
 from homey_energy_dongle_ws.exceptions import (
     ConnectionLimitError,
+    ConnectionLostError,
     HomeyWebSocketError,
     LocalApiDisabledError,
     TelegramParseError,
@@ -113,6 +114,7 @@ class EnergyDongleClient:
         ping_interval_s: float = PING_INTERVAL_S,
         ping_timeout_s: float = PING_TIMEOUT_S,
         reconnect_delay_s: float = RECONNECT_DELAY_S,
+        reconnect: bool = True,
         telegram_specification: Mapping[str, Any] = telegram_specifications.V5,
         apply_checksum_validation: bool = True,
     ) -> None:
@@ -122,6 +124,7 @@ class EnergyDongleClient:
         self._ping_interval_s = ping_interval_s
         self._ping_timeout_s = ping_timeout_s
         self._reconnect_delay_s = reconnect_delay_s
+        self._reconnect = reconnect
         self._telegram_specification = telegram_specification
         self._apply_checksum_validation = apply_checksum_validation
         self._stop = asyncio.Event()
@@ -143,6 +146,7 @@ class EnergyDongleClient:
             ping_interval_s=settings.ping_interval_s,
             ping_timeout_s=settings.ping_timeout_s,
             reconnect_delay_s=settings.reconnect_delay_s,
+            reconnect=settings.reconnect,
             telegram_specification=settings.telegram_specification,
             apply_checksum_validation=settings.apply_checksum_validation,
         )
@@ -173,6 +177,8 @@ class EnergyDongleClient:
     async def iter_raw_bytes(self) -> AsyncIterator[bytes]:
         """Yield each message as :class:`bytes`; reconnect after transient disconnects.
 
+        With ``reconnect=False``, a failed connect or any disconnect raises
+        :exc:`~homey_energy_dongle_ws.exceptions.ConnectionLostError` instead.
         Higher-level helpers buffer these chunks into telegrams and optionally
         parse them.
         """
@@ -201,11 +207,16 @@ class EnergyDongleClient:
                 HomeyWebSocketError,
             ):
                 raise
-            except (OSError, TimeoutError):
-                pass
+            except (OSError, TimeoutError) as exc:
+                if not self._reconnect and not self._stop.is_set():
+                    raise ConnectionLostError(
+                        f"Cannot connect to {self.ws_url}: {exc}"
+                    ) from exc
 
             if self._stop.is_set():
                 return
+            if not self._reconnect:
+                raise ConnectionLostError(f"Connection to {self.ws_url} closed")
             await _sleep_reconnect_delay(self._reconnect_delay_s)
 
     async def stream_raw(self) -> AsyncIterator[bytes]:

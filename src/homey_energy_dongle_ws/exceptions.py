@@ -14,7 +14,7 @@ class TelegramChecksumError(TelegramParseError):
 
 
 class HomeyWebSocketError(Exception):
-    """Base for unrecoverable WebSocket policy or configuration errors."""
+    """Base for WebSocket errors raised by the client."""
 
     def __init__(
         self,
@@ -62,6 +62,14 @@ class ConnectionLimitError(HomeyWebSocketError):
             close_code=close_code,
             close_reason=close_reason if close_reason is not None else reason,
         )
+
+
+class ConnectionLostError(HomeyWebSocketError):
+    """Raised when a ``reconnect=False`` client cannot connect or gets disconnected.
+
+    Lets callers mark the device unavailable and own the retry policy instead of
+    the client reconnecting silently.
+    """
 
 
 def _close_code_and_reason(exc: ConnectionClosed) -> tuple[int, str]:

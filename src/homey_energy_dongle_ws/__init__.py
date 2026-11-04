@@ -11,14 +11,25 @@ from homey_energy_dongle_ws.discovery import (
     discover_energy_dongles,
     service_instance_display_name,
 )
-from homey_energy_dongle_ws.exceptions import TelegramChecksumError, TelegramParseError
+from homey_energy_dongle_ws.exceptions import (
+    ConnectionLimitError,
+    ConnectionLostError,
+    HomeyWebSocketError,
+    LocalApiDisabledError,
+    TelegramChecksumError,
+    TelegramParseError,
+)
 from homey_energy_dongle_ws.parser import parse_telegram
 from homey_energy_dongle_ws.telegram_assembly import TelegramAssembler
 
 __all__ = [
     "ENERGY_DONGLE_SERVICE_TYPE",
+    "ConnectionLimitError",
+    "ConnectionLostError",
     "DiscoveredEnergyDongle",
     "EnergyDongleClient",
+    "HomeyWebSocketError",
+    "LocalApiDisabledError",
     "TelegramAssembler",
     "TelegramChecksumError",
     "TelegramParseError",
