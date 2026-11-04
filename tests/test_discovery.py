@@ -178,7 +178,7 @@ def test_discover_energy_dongles_dedupes_by_host_port(
 
 
 def test_listener_remove_service_drops_energy_dongle() -> None:
-    """When the last mDNS name for a host:port goes away, the entry is removed."""
+    """When an mDNS name goes away, that entry is removed from the name map."""
 
     info = _sample_service_info(name="Only._energydongle._tcp.local.")
 
@@ -192,17 +192,15 @@ def test_listener_remove_service_drops_energy_dongle() -> None:
             return info
 
     async def run() -> None:
-        results: dict[tuple[str, int], DiscoveredEnergyDongle] = {}
-        lock = asyncio.Lock()
+        results: dict[str, DiscoveredEnergyDongle] = {}
         listener = _EnergyDongleListener(
             FakeAiozc(),
             results,
-            lock,
             resolve_timeout_ms=1000,
         )
         await listener._ingest(ENERGY_DONGLE_SERVICE_TYPE, info.name)
         assert len(results) == 1
-        await listener._remove(info.name)
+        listener.remove_service(MagicMock(), ENERGY_DONGLE_SERVICE_TYPE, info.name)
         assert len(results) == 0
 
     asyncio.run(run())
