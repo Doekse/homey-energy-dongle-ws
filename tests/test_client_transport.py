@@ -129,7 +129,7 @@ def test_iter_raw_bytes_raises_local_api_disabled() -> None:
             "homey_energy_dongle_ws.client.connect",
             _fake_connect(_PolicyCloseSocket("Local API disabled")),
         ):
-            agen = client.iter_raw_bytes()
+            agen = client._iter_raw_bytes()
             with pytest.raises(LocalApiDisabledError):
                 await agen.__anext__()
 
@@ -143,7 +143,7 @@ def test_iter_raw_bytes_raises_connection_limit() -> None:
             "homey_energy_dongle_ws.client.connect",
             _fake_connect(_PolicyCloseSocket("Connection limit reached")),
         ):
-            agen = client.iter_raw_bytes()
+            agen = client._iter_raw_bytes()
             with pytest.raises(ConnectionLimitError):
                 await agen.__anext__()
 
@@ -176,7 +176,7 @@ def test_reconnect_uses_reconnect_delay_after_connect_error(
         client = EnergyDongleClient("127.0.0.1")
 
         async def wait_for_first_sleep() -> None:
-            agen = client.iter_raw_bytes()
+            agen = client._iter_raw_bytes()
             await agen.__anext__()
 
         sleep_patch = patch(
@@ -217,7 +217,7 @@ def test_no_reconnect_raises_on_connect_failure(
             _fake_connect(raises=connect_error),
         ):
             with pytest.raises(ConnectionLostError):
-                await client.iter_raw_bytes().__anext__()
+                await client._iter_raw_bytes().__anext__()
 
     asyncio.run(run())
 
@@ -230,7 +230,7 @@ def test_no_reconnect_raises_on_clean_close() -> None:
             _fake_connect(_ClosedSocket()),
         ):
             with pytest.raises(ConnectionLostError):
-                await client.iter_raw_bytes().__anext__()
+                await client._iter_raw_bytes().__anext__()
 
     asyncio.run(run())
 

@@ -1,4 +1,4 @@
-"""Tests for high-level stream helpers (mocked ``iter_raw_bytes``; no Energy Dongle)."""
+"""Tests for high-level stream helpers (mocked ``_iter_raw_bytes``)."""
 
 from __future__ import annotations
 
@@ -36,7 +36,7 @@ def test_stream_telegrams_from_chunked_raw() -> None:
         client = EnergyDongleClient("127.0.0.1")
         with patch.object(
             EnergyDongleClient,
-            "iter_raw_bytes",
+            "_iter_raw_bytes",
             mock_iter_raw_bytes,
         ):
             out: list[str] = []
@@ -66,7 +66,7 @@ def test_stream_parsed_skip_parse_errors(caplog: pytest.LogCaptureFixture) -> No
         with (
             patch.object(
                 EnergyDongleClient,
-                "iter_raw_bytes",
+                "_iter_raw_bytes",
                 mock_iter_raw_bytes,
             ),
             patch("homey_energy_dongle_ws.client._parse", boom),
@@ -108,7 +108,7 @@ def test_stream_parsed_skips_non_ascii_corrupt_telegram_and_continues(
         )
         with patch.object(
             EnergyDongleClient,
-            "iter_raw_bytes",
+            "_iter_raw_bytes",
             mock_iter_raw_bytes,
         ):
             out: list[Telegram] = []
@@ -135,7 +135,7 @@ def test_stream_parsed_yields_telegram() -> None:
         )
         with patch.object(
             EnergyDongleClient,
-            "iter_raw_bytes",
+            "_iter_raw_bytes",
             mock_iter_raw_bytes,
         ):
             count = 0
@@ -148,7 +148,7 @@ def test_stream_parsed_yields_telegram() -> None:
 
 
 def test_second_stream_blocks_until_first_releases_lock() -> None:
-    """Second stream waits while the first holds the lock on ``iter_raw_bytes``."""
+    """Second stream waits while the first holds the lock on ``_iter_raw_bytes``."""
 
     async def mock_iter_raw_bytes(self: EnergyDongleClient) -> object:
         yield b"x"
@@ -158,7 +158,7 @@ def test_second_stream_blocks_until_first_releases_lock() -> None:
         client = EnergyDongleClient("127.0.0.1")
         with patch.object(
             EnergyDongleClient,
-            "iter_raw_bytes",
+            "_iter_raw_bytes",
             mock_iter_raw_bytes,
         ):
 
@@ -197,11 +197,11 @@ def test_stream_raw_matches_iter_raw_bytes_under_mock() -> None:
         client = EnergyDongleClient("127.0.0.1")
         with patch.object(
             EnergyDongleClient,
-            "iter_raw_bytes",
+            "_iter_raw_bytes",
             mock_iter_raw_bytes,
         ):
             raw = [x async for x in client.stream_raw()]
-            direct = [x async for x in client.iter_raw_bytes()]
+            direct = [x async for x in client._iter_raw_bytes()]
             assert raw == direct == chunks
 
     asyncio.run(run())

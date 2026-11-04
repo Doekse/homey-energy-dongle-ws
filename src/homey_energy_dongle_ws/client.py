@@ -126,10 +126,7 @@ class EnergyDongleClient:
 
     Only **one** of :meth:`stream_raw`, :meth:`stream_telegrams`, or
     :meth:`stream_parsed` may run at a time per client. A second caller **blocks**
-    on an internal lock until the active stream finishes (including across
-    reconnects inside :meth:`iter_raw_bytes`). :meth:`iter_raw_bytes` is not
-    guarded by this lock and must not be used concurrently with those stream
-    helpers if you need the single-reader guarantee.
+    on an internal lock until the active stream finishes.
     """
 
     def __init__(
@@ -192,13 +189,13 @@ class EnergyDongleClient:
         await self.aclose()
 
     async def aclose(self) -> None:
-        """Signal :meth:`iter_raw_bytes` to stop and close any active WebSocket."""
+        """Signal the active stream to stop and close any active WebSocket."""
         self._stop.set()
         ws = self._ws
         if ws is not None:
             await ws.close()
 
-    async def iter_raw_bytes(self) -> AsyncIterator[bytes]:
+    async def _iter_raw_bytes(self) -> AsyncIterator[bytes]:
         """Yield each message as :class:`bytes`; reconnect after transient disconnects.
 
         With ``reconnect=False``, a failed connect or any disconnect raises
@@ -244,12 +241,9 @@ class EnergyDongleClient:
             await _sleep_reconnect_delay(self._reconnect_delay_s)
 
     async def stream_raw(self) -> AsyncIterator[bytes]:
-        """Yield each WebSocket message payload as :class:`bytes`.
-
-        Same data as :meth:`iter_raw_bytes`, under the client's stream lock.
-        """
+        """Yield each WebSocket message payload as :class:`bytes`."""
         async with self._stream_lock:
-            async for chunk in self.iter_raw_bytes():
+            async for chunk in self._iter_raw_bytes():
                 yield chunk
 
     async def stream_telegrams(self) -> AsyncIterator[str]:
@@ -257,14 +251,14 @@ class EnergyDongleClient:
 
         Uses one :class:`~homey_energy_dongle_ws.telegram_assembly.TelegramAssembler`
         for the whole iteration so framing survives transparent reconnects in
-        :meth:`iter_raw_bytes`. Non-ASCII bytes are replaced during decode so
+        :meth:`_iter_raw_bytes`. Non-ASCII bytes are replaced during decode so
         framing can continue instead of raising :exc:`UnicodeDecodeError`.
         This method yields strings. A still-framed telegram fails checksum
         later only when the specification validates a CRC.
         """
         async with self._stream_lock:
             assembler = TelegramAssembler()
-            async for chunk in self.iter_raw_bytes():
+            async for chunk in self._iter_raw_bytes():
                 for telegram_str in assembler.feed(chunk):
                     yield telegram_str
 

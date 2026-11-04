@@ -30,7 +30,7 @@ def test_two_telegrams_in_one_chunk() -> None:
 def test_partial_feeds_then_completion() -> None:
     asm = TelegramAssembler()
     bang = GOLDEN.index("!")
-    assert list(asm.feed_str(GOLDEN[:bang])) == []
+    assert list(asm.feed(GOLDEN[:bang].encode())) == []
     tail = GOLDEN[bang:]
-    assert list(asm.feed_str(tail[:2])) == []
-    assert list(asm.feed_str(tail[2:])) == [GOLDEN]
+    assert list(asm.feed(tail[:2].encode())) == []
+    assert list(asm.feed(tail[2:].encode())) == [GOLDEN]

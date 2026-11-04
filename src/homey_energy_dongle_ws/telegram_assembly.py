@@ -41,17 +41,3 @@ class TelegramAssembler:
         text = chunk.decode(_CHUNK_ENCODING, errors="replace")
         self._telegram_buffer.append(text)
         yield from self._telegram_buffer.get_all()
-
-    def feed_str(self, chunk: str) -> Iterator[str]:
-        """Append text that is already a string (bypasses bytes decoding).
-
-        Intended for tests and callers that do not have raw wire bytes.
-
-        Args:
-            chunk: Telegram fragment text.
-
-        Yields:
-            Same semantics as :meth:`feed`.
-        """
-        self._telegram_buffer.append(chunk)
-        yield from self._telegram_buffer.get_all()

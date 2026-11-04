@@ -29,6 +29,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
+- Public `EnergyDongleClient.iter_raw_bytes`; use `stream_raw`, `stream_telegrams`, or `stream_parsed` instead. The reconnect loop remains as private `_iter_raw_bytes`.
+- `TelegramAssembler.feed_str`; pass encoded bytes to `feed` instead.
 - `EnergyDongleConnectionSettings` and `EnergyDongleClient.from_settings`. Pass connection options to `EnergyDongleClient` directly.
 
 ## [0.2.0] - 2026-04-11
