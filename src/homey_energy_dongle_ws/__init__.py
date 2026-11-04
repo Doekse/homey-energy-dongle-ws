@@ -19,7 +19,11 @@ from homey_energy_dongle_ws.exceptions import (
     TelegramChecksumError,
     TelegramParseError,
 )
-from homey_energy_dongle_ws.parser import DSMR_VERSIONS, parse_telegram
+from homey_energy_dongle_ws.parser import (
+    DSMR_VERSIONS,
+    detect_dsmr_version,
+    parse_telegram,
+)
 from homey_energy_dongle_ws.telegram_assembly import TelegramAssembler
 
 __all__ = [
@@ -35,6 +39,7 @@ __all__ = [
     "TelegramChecksumError",
     "TelegramParseError",
     "__version__",
+    "detect_dsmr_version",
     "discover_energy_dongles",
     "parse_telegram",
     "service_instance_display_name",

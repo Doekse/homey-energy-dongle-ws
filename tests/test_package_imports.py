@@ -4,6 +4,7 @@ import homey_energy_dongle_ws
 
 
 def test_import_and_version() -> None:
+    assert hasattr(homey_energy_dongle_ws, "detect_dsmr_version")
     assert hasattr(homey_energy_dongle_ws, "discover_energy_dongles")
     assert hasattr(homey_energy_dongle_ws, "DiscoveredEnergyDongle")
     assert hasattr(homey_energy_dongle_ws, "service_instance_display_name")

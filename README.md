@@ -95,6 +95,8 @@ asyncio.run(main())
 
 Pass `dsmr_version` with a code from `DSMR_VERSIONS` (for example `"5"`, `"5B"`, or `"4"`) to select the matching [dsmr-parser](https://dsmr-parser.readthedocs.io/) telegram specification. Omit it to keep the V5 default. Alternatively, pass a custom `telegram_specification` mapping; do not set both. A wrong version typically causes parse errors, not silent wrong data.
 
+`detect_dsmr_version(telegram)` returns one of those codes from a complete telegram string, or `None` when the profile is not recognized. Parsing is unchanged: pass the code back as `dsmr_version`.
+
 For long-running processes, `stream_parsed(skip_parse_errors=True)` logs and skips a bad telegram instead of stopping the stream (default remains fail-fast).
 
 ## Reconnect behavior

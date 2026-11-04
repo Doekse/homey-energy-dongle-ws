@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from collections.abc import Mapping
 from typing import Any
 
@@ -25,6 +26,54 @@ TELEGRAM_SPECIFICATIONS: Mapping[str, Mapping[str, Any]] = {
     "2.2": telegram_specifications.V2_2,
 }
 DSMR_VERSIONS: tuple[str, ...] = tuple(TELEGRAM_SPECIFICATIONS)
+
+# OBIS id without the channel. Q3D inserts ``*255`` before the value group.
+_OBIS_LINE = re.compile(r"(?m)^[0-9]-[0-9]:([0-9]+(?:\.[0-9]+)*)(?:\*\d+)?\(([^)]*)\)")
+_CHECKSUM_LINE = re.compile(r"(?m)^![0-9A-Fa-f]{1,4}\r?$")
+
+
+def _obis_values(telegram: str) -> dict[str, str]:
+    """Return the first value of each OBIS id in ``telegram``."""
+    values: dict[str, str] = {}
+    for code, value in _OBIS_LINE.findall(telegram):
+        values.setdefault(code, value)
+    return values
+
+
+def detect_dsmr_version(telegram: str) -> str | None:
+    """Return the ``DSMR_VERSIONS`` code for one telegram, or ``None``.
+
+    Country profiles are tested before ``1-3:0.2.8``. Luxembourg writes ``42``
+    there, and Belgian meters share Hungary's extra tariff registers. Reactive
+    energy with neither an equipment id nor tariff 1 is Swedish. DSMR 3 has no
+    checksum and uses the ``2.2`` specification. ``None`` means the telegram
+    matched no supported profile.
+    """
+    obis = _obis_values(telegram)
+    if "96.1.4" in obis or "1.4.0" in obis:
+        return "5B"
+    if ("1.8.3" in obis and "1.8.4" in obis) or "14.7.0" in obis:
+        return "5EONHU"
+    if "42.0.0" in obis:
+        return "5L"
+    if "96.1.255" in obis:
+        return "Q3D"
+    if (
+        "96.1.1" not in obis
+        and "1.8.1" not in obis
+        and ("23.7.0" in obis or "3.8.0" in obis)
+    ):
+        return "5S"
+    version = obis.get("0.2.8", "")
+    if version[:1] in {"4", "5"} and version[1:].isdigit():
+        return version[:1]
+    if (
+        telegram.startswith("/")
+        and "!" in telegram
+        and _CHECKSUM_LINE.search(telegram) is None
+    ):
+        return "2.2"
+    return None
 
 
 def _parse(parser: TelegramParser, telegram_str: str) -> Telegram:
