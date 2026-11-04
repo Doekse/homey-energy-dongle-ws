@@ -155,9 +155,7 @@ class EnergyDongleClient:
             resolved_specification = telegram_specification
         else:
             resolved_specification = telegram_specifications.V5
-        self._host = host
-        self._port = port
-        self._path = path
+        self.ws_url = build_ws_url(host, port, path)
         self._ping_interval_s = ping_interval_s
         self._ping_timeout_s = ping_timeout_s
         self._reconnect_delay_s = reconnect_delay_s
@@ -171,11 +169,6 @@ class EnergyDongleClient:
         self._stop = asyncio.Event()
         self._stream_lock = asyncio.Lock()
         self._ws: ClientConnection | None = None
-
-    @property
-    def ws_url(self) -> str:
-        """The ``ws://`` URL this client connects to (logging, display, tests)."""
-        return build_ws_url(self._host, self._port, self._path)
 
     async def __aenter__(self) -> Self:
         return self

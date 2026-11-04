@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- `EnergyDongleClient` computes `ws_url` once in `__init__` instead of rebuilding it from stored host/port/path on each access.
 - Discovery tracks services by mDNS instance name and deduplicates by `(host, port)` when returning results, instead of maintaining parallel name/key maps under a lock.
 - `stream_parsed` builds on `stream_telegrams` and reuses one `TelegramParser` per client instead of assembling and constructing a parser on every telegram.
 - Simplify WebSocket close-code mapping: policy closes are handled in one client helper, and `LocalApiDisabledError` / `ConnectionLimitError` no longer override `__init__`.
