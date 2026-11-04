@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Debug log before reconnect sleep when a connect attempt fails with `OSError`, `TimeoutError`, or `InvalidHandshake` and `reconnect=True`.
 - `reconnect` option on `EnergyDongleClient` and `EnergyDongleConnectionSettings`. With `reconnect=False`, a failed connect or any disconnect raises the new `ConnectionLostError` instead of reconnecting silently, so callers can mark the device unavailable and own the retry policy.
 - `ConnectionLimitError`, `ConnectionLostError`, `HomeyWebSocketError` and `LocalApiDisabledError` are exported from the package root.
 - `dsmr_version` option on `EnergyDongleClient` and `EnergyDongleConnectionSettings` that selects the telegram specification from a DSMR version code (for example `"5"` or `"5B"`), using the same codes as `dsmr_parser`. The supported codes are exported as `DSMR_VERSIONS`.

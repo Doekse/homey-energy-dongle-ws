@@ -218,6 +218,13 @@ class EnergyDongleClient:
                     raise ConnectionLostError(
                         f"Cannot connect to {self.ws_url}: {exc}"
                     ) from exc
+                if self._reconnect and not self._stop.is_set():
+                    logger.debug(
+                        "Connection to %s failed: %s; retrying in %ss",
+                        self.ws_url,
+                        exc,
+                        self._reconnect_delay_s,
+                    )
 
             if self._stop.is_set():
                 return
