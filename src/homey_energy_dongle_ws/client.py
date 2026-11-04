@@ -21,7 +21,7 @@ from typing import Any, Self
 from dsmr_parser import telegram_specifications
 from dsmr_parser.objects import Telegram
 from websockets.asyncio.client import ClientConnection, connect
-from websockets.exceptions import ConnectionClosed
+from websockets.exceptions import ConnectionClosed, InvalidHandshake
 
 from homey_energy_dongle_ws.constants import (
     DEFAULT_PORT,
@@ -213,7 +213,7 @@ class EnergyDongleClient:
                 HomeyWebSocketError,
             ):
                 raise
-            except (OSError, TimeoutError) as exc:
+            except (OSError, TimeoutError, InvalidHandshake) as exc:
                 if not self._reconnect and not self._stop.is_set():
                     raise ConnectionLostError(
                         f"Cannot connect to {self.ws_url}: {exc}"

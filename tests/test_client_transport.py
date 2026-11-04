@@ -7,8 +7,10 @@ from unittest.mock import patch
 
 import pytest
 from dsmr_parser import telegram_specifications as ts
-from websockets.exceptions import ConnectionClosedError
+from websockets.datastructures import Headers
+from websockets.exceptions import ConnectionClosedError, InvalidStatus
 from websockets.frames import Close
+from websockets.http11 import Response
 
 from homey_energy_dongle_ws.client import EnergyDongleClient, build_ws_url
 from homey_energy_dongle_ws.constants import RECONNECT_DELAY_S
@@ -142,7 +144,22 @@ def test_iter_raw_bytes_raises_connection_limit() -> None:
     asyncio.run(run())
 
 
-def test_reconnect_uses_reconnect_delay_after_oserror() -> None:
+def _invalid_status() -> InvalidStatus:
+    return InvalidStatus(Response(503, "Service Unavailable", Headers()))
+
+
+def _connect_errors() -> tuple[BaseException, ...]:
+    return (OSError("connection refused"), _invalid_status())
+
+
+@pytest.mark.parametrize(
+    "connect_error",
+    _connect_errors(),
+    ids=["oserror", "invalid_handshake"],
+)
+def test_reconnect_uses_reconnect_delay_after_connect_error(
+    connect_error: BaseException,
+) -> None:
     sleeps: list[float] = []
 
     async def record_sleep(delay: float) -> None:
@@ -163,7 +180,7 @@ def test_reconnect_uses_reconnect_delay_after_oserror() -> None:
         with (
             patch(
                 "homey_energy_dongle_ws.client.connect",
-                _fake_connect(raises=OSError("connection refused")),
+                _fake_connect(raises=connect_error),
             ),
             sleep_patch,
         ):
@@ -179,12 +196,19 @@ def test_reconnect_uses_reconnect_delay_after_oserror() -> None:
     assert sleeps and sleeps[0] == RECONNECT_DELAY_S
 
 
-def test_no_reconnect_raises_on_connect_failure() -> None:
+@pytest.mark.parametrize(
+    "connect_error",
+    _connect_errors(),
+    ids=["oserror", "invalid_handshake"],
+)
+def test_no_reconnect_raises_on_connect_failure(
+    connect_error: BaseException,
+) -> None:
     async def run() -> None:
         client = EnergyDongleClient("127.0.0.1", reconnect=False)
         with patch(
             "homey_energy_dongle_ws.client.connect",
-            _fake_connect(raises=OSError("connection refused")),
+            _fake_connect(raises=connect_error),
         ):
             with pytest.raises(ConnectionLostError):
                 await client.iter_raw_bytes().__anext__()

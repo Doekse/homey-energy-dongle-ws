@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Require `websockets>=13.0`, matching the `websockets.asyncio.client` API the client imports.
+- Treat WebSocket handshake failures (`InvalidHandshake`, including `InvalidStatus`) like other transient connect errors: raise `ConnectionLostError` when `reconnect=False`, otherwise wait and retry.
 
 ## [0.2.0] - 2026-04-11
 
