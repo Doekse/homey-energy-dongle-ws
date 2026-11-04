@@ -78,6 +78,8 @@ def _energy_dongle_from_service_info(
         host = v6[0]
     else:
         return None
+    if info.port is None:
+        return None
 
     decoded = dict(info.decoded_properties)
     p_raw = decoded.get("p")
@@ -85,7 +87,7 @@ def _energy_dongle_from_service_info(
 
     return DiscoveredEnergyDongle(
         host=host,
-        port=int(info.port),
+        port=info.port,
         ws_path=_normalize_ws_path(p_raw),
         version=v_raw,
         service_name=info.name,

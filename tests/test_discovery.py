@@ -96,6 +96,16 @@ def test_energy_dongle_from_service_info_no_addresses() -> None:
     assert _energy_dongle_from_service_info(info) is None
 
 
+def test_energy_dongle_from_service_info_no_port() -> None:
+    info = ServiceInfo(
+        ENERGY_DONGLE_SERVICE_TYPE,
+        "x._energydongle._tcp.local.",
+        properties={"p": "/ws"},
+        parsed_addresses=["192.168.1.2"],
+    )
+    assert _energy_dongle_from_service_info(info) is None
+
+
 def test_discover_energy_dongles_dedupes_by_host_port(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
