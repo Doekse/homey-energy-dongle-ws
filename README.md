@@ -30,7 +30,7 @@ pip install git+https://github.com/Doekse/homey-energy-dongle-ws.git
 
 ## Quick start (discovery first)
 
-On the same LAN as the Energy Dongle, call `**discover_energy_dongles()**`, pick a result that has `**ws_path**` set when possible, then open `**EnergyDongleClient**` (or use `**build_ws_url**` with the chosen host, port, and path).
+On the same LAN as the Energy Dongle, call `discover_energy_dongles()`, pick a result that has `ws_path` set when possible, then open `EnergyDongleClient`.
 
 ```python
 import asyncio
@@ -64,17 +64,17 @@ asyncio.run(main())
 
 **TXT records (mDNS):**
 
-- `**p`** — WebSocket path (e.g. `/ws`). If **missing**, the library sets `ws_path` to `None` (WebSocket not advertised / Local API off).
-- `**v`** — Version string (`DiscoveredEnergyDongle.version`). Full decoded TXT is in `**DiscoveredEnergyDongle.txt`**.
+- `p` — WebSocket path (e.g. `/ws`). If **missing**, the library sets `ws_path` to `None` (WebSocket not advertised / Local API off).
+- `v` — Version string (`DiscoveredEnergyDongle.version`). Full decoded TXT is in `DiscoveredEnergyDongle.txt`.
 
 **Firewall / network:** the client host must allow **mDNS** (UDP **5353** inbound/outbound) and LAN traffic to the Energy Dongle. Routers, VLANs, VPNs, or “guest” Wi‑Fi often block multicast, use manual connection instead.
 
 ## Manual connection (fallback)
 
-Use this when discovery returns nothing, times out, `**p`** is missing and you know Local API should work, or you are not on the same L2 segment:
+Use this when discovery returns nothing, times out, `p` is missing and you know Local API should work, or you are not on the same L2 segment:
 
 1. Open the **Homey** app → your Energy Dongle → **Settings** → **Advanced Settings**, then note the **IP address** which is listed.
-2. Connect with defaults `**ws://<host>:80/ws`** (or pass `port` / `path` if yours differ). For **IPv6** literals, `build_ws_url()` and `EnergyDongleClient.ws_url` use bracketed hosts (e.g. `ws://[2001:db8::1]:80/ws`) as required by the WebSocket URL syntax.
+2. Connect with defaults `ws://<host>:80/ws` (or pass `port` / `path` if yours differ). For **IPv6** literals, `EnergyDongleClient.ws_url` uses a bracketed host (e.g. `ws://[2001:db8::1]:80/ws`) as required by the WebSocket URL syntax.
 
 ```python
 import asyncio
@@ -93,18 +93,22 @@ asyncio.run(main())
 
 ## DSMR version
 
-Parsing uses `telegram_specification` from `[dsmr_parser.telegram_specifications](https://dsmr-parser.readthedocs.io/)` (default: **V5**). If your meter uses another DSMR version, pass the matching spec to `EnergyDongleClient(..., telegram_specification=...)`. A wrong spec typically causes parse errors, not silent wrong data.
+Pass `dsmr_version` with a code from `DSMR_VERSIONS` (for example `"5"`, `"5B"`, or `"4"`) to select the matching [dsmr-parser](https://dsmr-parser.readthedocs.io/) telegram specification. Omit it to keep the V5 default. Alternatively, pass a custom `telegram_specification` mapping; do not set both. A wrong version typically causes parse errors, not silent wrong data.
 
 For long-running processes, `stream_parsed(skip_parse_errors=True)` logs and skips a bad telegram instead of stopping the stream (default remains fail-fast).
 
+## Reconnect behavior
+
+By default (`reconnect=True`), the client waits and retries after transient connect failures or disconnects. Pass `reconnect=False` when you want to own the retry policy (for example in a Home Assistant integration): a failed connect or any disconnect then raises `ConnectionLostError` so you can mark the device unavailable and reconnect on your own schedule.
+
 ## Limits
 
-The Energy Dongle allows at most **two** concurrent WebSocket clients. A third connection is rejected with close code **1008**; this library raises `**ConnectionLimitError`**.
+The Energy Dongle allows at most **two** concurrent WebSocket clients. A third connection is rejected with close code **1008**; this library raises `ConnectionLimitError`.
 
 ## Troubleshooting
 
-- **Local API disabled** in the app → the server closes with **1008** and this library raises `**LocalApiDisabledError`** (check `**close_code`** / `**close_reason`** on `**HomeyWebSocketError`** subclasses for logging).
-- **Connection limit** → `**ConnectionLimitError`** (1008).
+- **Local API disabled** in the app → the server closes with **1008** and this library raises `LocalApiDisabledError` (check `close_code` / `close_reason` on `HomeyWebSocketError` subclasses for logging).
+- **Connection limit** → `ConnectionLimitError` (1008).
 
 ## For maintainers
 

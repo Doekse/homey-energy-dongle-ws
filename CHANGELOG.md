@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- README: fix nested bold/backtick markup; document `dsmr_version` / `DSMR_VERSIONS`, `reconnect=False` / `ConnectionLostError`, and that a closed client cannot be reused.
 - `EnergyDongleClient` computes `ws_url` once in `__init__` instead of rebuilding it from stored host/port/path on each access.
 - Discovery tracks services by mDNS instance name and deduplicates by `(host, port)` when returning results, instead of maintaining parallel name/key maps under a lock.
 - `stream_parsed` builds on `stream_telegrams` and reuses one `TelegramParser` per client instead of assembling and constructing a parser on every telegram.

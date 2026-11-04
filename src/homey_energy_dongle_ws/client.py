@@ -182,7 +182,11 @@ class EnergyDongleClient:
         await self.aclose()
 
     async def aclose(self) -> None:
-        """Signal the active stream to stop and close any active WebSocket."""
+        """Signal the active stream to stop and close any active WebSocket.
+
+        After ``aclose()``, this instance cannot be reused; create a new client
+        to open another connection.
+        """
         self._stop.set()
         ws = self._ws
         if ws is not None:
