@@ -15,7 +15,7 @@ from __future__ import annotations
 import asyncio
 import ipaddress
 import logging
-from collections.abc import AsyncIterator, Mapping
+from collections.abc import AsyncGenerator, Mapping
 from typing import Any, Self
 
 from dsmr_parser import telegram_specifications
@@ -192,7 +192,7 @@ class EnergyDongleClient:
         if ws is not None:
             await ws.close()
 
-    async def _iter_raw_bytes(self) -> AsyncIterator[bytes]:
+    async def _iter_raw_bytes(self) -> AsyncGenerator[bytes, None]:
         """Yield each message as :class:`bytes`; reconnect after transient disconnects.
 
         With ``reconnect=False``, a failed connect or any disconnect raises
@@ -237,13 +237,13 @@ class EnergyDongleClient:
                 raise ConnectionLostError(f"Connection to {self.ws_url} closed")
             await _sleep_reconnect_delay(self._reconnect_delay_s)
 
-    async def stream_raw(self) -> AsyncIterator[bytes]:
+    async def stream_raw(self) -> AsyncGenerator[bytes, None]:
         """Yield each WebSocket message payload as :class:`bytes`."""
         async with self._stream_lock:
             async for chunk in self._iter_raw_bytes():
                 yield chunk
 
-    async def stream_telegrams(self) -> AsyncIterator[str]:
+    async def stream_telegrams(self) -> AsyncGenerator[str, None]:
         """Assemble raw chunks into complete DSMR telegram strings.
 
         Uses one :class:`~homey_energy_dongle_ws.telegram_assembly.TelegramAssembler`
@@ -263,7 +263,7 @@ class EnergyDongleClient:
         self,
         *,
         skip_parse_errors: bool = False,
-    ) -> AsyncIterator[Telegram]:
+    ) -> AsyncGenerator[Telegram, None]:
         """Yield ``dsmr_parser`` :class:`~dsmr_parser.objects.Telegram` objects.
 
         Builds on :meth:`stream_telegrams` and parses each string with the

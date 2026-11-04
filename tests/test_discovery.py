@@ -4,10 +4,11 @@ from __future__ import annotations
 
 import asyncio
 import os
-from unittest.mock import MagicMock
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-from zeroconf import ServiceInfo
+from zeroconf import ServiceInfo, ServiceListener
+from zeroconf.asyncio import AsyncZeroconf
 
 from homey_energy_dongle_ws.discovery import (
     ENERGY_DONGLE_SERVICE_TYPE,
@@ -119,12 +120,12 @@ def test_discover_energy_dongles_dedupes_by_host_port(
         properties={"p": "/other", "v": "9"},
     )
 
-    fake_holder: list[object] = []
+    fake_holder: list[FakeAsyncZeroconf] = []
 
     class FakeAsyncZeroconf:
         def __init__(self, *args: object, **kwargs: object) -> None:
             self.zeroconf = MagicMock()
-            self._listener: object | None = None
+            self._listener: ServiceListener | None = None
             fake_holder.append(self)
 
         async def __aenter__(self) -> FakeAsyncZeroconf:
@@ -136,7 +137,7 @@ def test_discover_energy_dongles_dedupes_by_host_port(
         async def async_add_service_listener(
             self,
             type_: str,
-            listener: object,
+            listener: ServiceListener,
         ) -> None:
             assert type_ == ENERGY_DONGLE_SERVICE_TYPE
             self._listener = listener
@@ -167,13 +168,16 @@ def test_discover_energy_dongles_dedupes_by_host_port(
         async def inject() -> None:
             for _ in range(100):
                 await asyncio.sleep(0.005)
-                if fake_holder and getattr(fake_holder[0], "_listener", None):
+                if fake_holder and fake_holder[0]._listener is not None:
                     break
-            assert fake_holder and fake_holder[0]._listener is not None
-            listener = fake_holder[0]._listener
-            zc = fake_holder[0].zeroconf
-            listener.add_service(zc, ENERGY_DONGLE_SERVICE_TYPE, info_a.name)
-            listener.add_service(zc, ENERGY_DONGLE_SERVICE_TYPE, info_b.name)
+            fake = fake_holder[0]
+            assert fake._listener is not None
+            fake._listener.add_service(
+                fake.zeroconf, ENERGY_DONGLE_SERVICE_TYPE, info_a.name
+            )
+            fake._listener.add_service(
+                fake.zeroconf, ENERGY_DONGLE_SERVICE_TYPE, info_b.name
+            )
 
         gathered = await asyncio.gather(task, inject())
         return gathered[0]
@@ -191,20 +195,13 @@ def test_listener_remove_service_drops_energy_dongle() -> None:
     """When an mDNS name goes away, that entry is removed from the name map."""
 
     info = _sample_service_info(name="Only._energydongle._tcp.local.")
-
-    class FakeAiozc:
-        async def async_get_service_info(
-            self,
-            type_: str,
-            name: str,
-            timeout: int = 3000,
-        ) -> ServiceInfo | None:
-            return info
+    aiozc = MagicMock(spec=AsyncZeroconf)
+    aiozc.async_get_service_info = AsyncMock(return_value=info)
 
     async def run() -> None:
         results: dict[str, DiscoveredEnergyDongle] = {}
         listener = _EnergyDongleListener(
-            FakeAiozc(),
+            aiozc,
             results,
             resolve_timeout_ms=1000,
         )

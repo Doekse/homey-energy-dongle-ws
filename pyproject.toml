@@ -32,6 +32,7 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
+    "mypy>=1.13",
     "pytest>=8.0",
     "ruff>=0.8.0",
 ]
@@ -54,6 +55,15 @@ src = ["src", "tests"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "W"]
+
+[tool.mypy]
+files = ["src", "tests", "scripts"]
+strict = true
+
+[[tool.mypy.overrides]]
+# dsmr_parser ships neither inline types nor stubs.
+module = ["dsmr_parser", "dsmr_parser.*"]
+ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

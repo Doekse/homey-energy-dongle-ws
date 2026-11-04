@@ -28,5 +28,8 @@ jobs:
       - name: Ruff
         run: ruff check .
 
+      - name: Mypy
+        run: mypy
+
       - name: Pytest (exclude integration)
         run: pytest -m "not integration"

@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `py.typed` marker (PEP 561), so type checkers use the package's inline annotations.
+
+### Changed
+
+- `stream_raw`, `stream_telegrams` and `stream_parsed` are annotated as `AsyncGenerator`, so type checkers accept `aclose()` and `contextlib.aclosing()` on them.
+- CI runs `mypy --strict` on the package, tests and scripts.
+
 ### Fixed
 
 - Discovery skips a resolved service without a port instead of raising `TypeError`.
