@@ -24,7 +24,6 @@ from homey_energy_dongle_ws.exceptions import (
     HomeyWebSocketError,
     LocalApiDisabledError,
 )
-from homey_energy_dongle_ws.models import EnergyDongleConnectionSettings
 
 
 def _policy_closed(code: int, reason: str) -> ConnectionClosedError:
@@ -253,9 +252,3 @@ def test_dsmr_version_and_telegram_specification_raises() -> None:
             dsmr_version="5",
             telegram_specification=ts.V5,
         )
-
-
-def test_from_settings_builds_same_url() -> None:
-    s = EnergyDongleConnectionSettings(host="x.test")
-    c = EnergyDongleClient.from_settings(s)
-    assert c.ws_url == "ws://x.test:80/ws"

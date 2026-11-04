@@ -38,7 +38,6 @@ from homey_energy_dongle_ws.exceptions import (
     LocalApiDisabledError,
     TelegramParseError,
 )
-from homey_energy_dongle_ws.models import EnergyDongleConnectionSettings
 from homey_energy_dongle_ws.parser import TELEGRAM_SPECIFICATIONS, _parse
 from homey_energy_dongle_ws.telegram_assembly import TelegramAssembler
 
@@ -175,27 +174,6 @@ class EnergyDongleClient:
         self._stop = asyncio.Event()
         self._stream_lock = asyncio.Lock()
         self._ws: ClientConnection | None = None
-
-    @classmethod
-    def from_settings(cls, settings: EnergyDongleConnectionSettings) -> Self:
-        """Construct a client from frozen connection settings.
-
-        ``settings`` supplies host, timing, and parser options in one immutable
-        snapshot; see
-        :class:`~homey_energy_dongle_ws.models.EnergyDongleConnectionSettings`.
-        """
-        return cls(
-            settings.host,
-            port=settings.port,
-            path=settings.path,
-            ping_interval_s=settings.ping_interval_s,
-            ping_timeout_s=settings.ping_timeout_s,
-            reconnect_delay_s=settings.reconnect_delay_s,
-            reconnect=settings.reconnect,
-            telegram_specification=settings.telegram_specification,
-            apply_checksum_validation=settings.apply_checksum_validation,
-            dsmr_version=settings.dsmr_version,
-        )
 
     @property
     def ws_url(self) -> str:

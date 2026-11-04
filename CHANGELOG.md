@@ -10,9 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Debug log before reconnect sleep when a connect attempt fails with `OSError`, `TimeoutError`, or `InvalidHandshake` and `reconnect=True`.
-- `reconnect` option on `EnergyDongleClient` and `EnergyDongleConnectionSettings`. With `reconnect=False`, a failed connect or any disconnect raises the new `ConnectionLostError` instead of reconnecting silently, so callers can mark the device unavailable and own the retry policy.
+- `reconnect` option on `EnergyDongleClient`. With `reconnect=False`, a failed connect or any disconnect raises the new `ConnectionLostError` instead of reconnecting silently, so callers can mark the device unavailable and own the retry policy.
 - `ConnectionLimitError`, `ConnectionLostError`, `HomeyWebSocketError` and `LocalApiDisabledError` are exported from the package root.
-- `dsmr_version` option on `EnergyDongleClient` and `EnergyDongleConnectionSettings` that selects the telegram specification from a DSMR version code (for example `"5"` or `"5B"`), using the same codes as `dsmr_parser`. The supported codes are exported as `DSMR_VERSIONS`.
+- `dsmr_version` option on `EnergyDongleClient` that selects the telegram specification from a DSMR version code (for example `"5"` or `"5B"`), using the same codes as `dsmr_parser`. The supported codes are exported as `DSMR_VERSIONS`.
 
 ### Changed
 
@@ -25,7 +25,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Require `websockets>=13.0`, matching the `websockets.asyncio.client` API the client imports.
 - Treat WebSocket handshake failures (`InvalidHandshake`, including `InvalidStatus`) like other transient connect errors: raise `ConnectionLostError` when `reconnect=False`, otherwise wait and retry.
 - Decode DSMR wire bytes as ASCII with `errors="replace"` so non-ASCII bytes are substituted and framing can continue, instead of raising `UnicodeDecodeError` and aborting the stream. A still-framed telegram fails checksum only when the specification validates a CRC.
-- Raise `ValueError` when both `dsmr_version` and `telegram_specification` are set on `EnergyDongleClient` (or via `EnergyDongleConnectionSettings`). Omit both to keep the V5 default.
+- Raise `ValueError` when both `dsmr_version` and `telegram_specification` are set on `EnergyDongleClient`. Omit both to keep the V5 default.
+
+### Removed
+
+- `EnergyDongleConnectionSettings` and `EnergyDongleClient.from_settings`. Pass connection options to `EnergyDongleClient` directly.
 
 ## [0.2.0] - 2026-04-11
 
