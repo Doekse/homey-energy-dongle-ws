@@ -239,8 +239,10 @@ class EnergyDongleClient:
 
         Uses one :class:`~homey_energy_dongle_ws.telegram_assembly.TelegramAssembler`
         for the whole iteration so framing survives transparent reconnects in
-        :meth:`iter_raw_bytes`. Corrupted non-ASCII bytes can raise
-        :exc:`UnicodeDecodeError` (strict ASCII decode in the assembler).
+        :meth:`iter_raw_bytes`. Non-ASCII bytes are replaced during decode so
+        framing can continue instead of raising :exc:`UnicodeDecodeError`.
+        This method yields strings. A still-framed telegram fails checksum
+        later only when the specification validates a CRC.
         """
         async with self._stream_lock:
             assembler = TelegramAssembler()

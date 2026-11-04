@@ -9,6 +9,7 @@ from unittest.mock import patch
 import pytest
 from dsmr_parser import telegram_specifications as ts
 from dsmr_parser.objects import Telegram
+from dsmr_parser.parsers import TelegramParser
 
 from homey_energy_dongle_ws.client import EnergyDongleClient
 from homey_energy_dongle_ws.exceptions import TelegramParseError
@@ -79,6 +80,47 @@ def test_stream_parsed_skip_parse_errors(caplog: pytest.LogCaptureFixture) -> No
             async for _ in client.stream_parsed(skip_parse_errors=True):
                 count += 1
             assert count == 0
+        assert "Skipping telegram" in caplog.text
+
+    asyncio.run(run())
+
+
+def _v4_crc_telegram(text: str) -> str:
+    """Return *text* with a CRC that passes V4 checksum validation."""
+    body = text[: text.index("!") + 1]
+    crc = TelegramParser.crc16(body)
+    return f"{body}{crc:04X}\r\n"
+
+
+def test_stream_parsed_skips_non_ascii_corrupt_telegram_and_continues(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Non-ASCII wire bytes are replaced, fail checksum, and do not stop the stream."""
+    good = _v4_crc_telegram(GOLDEN)
+    corrupt = bytearray(good.encode("ascii"))
+    corrupt[corrupt.index(b"FOO") + 1] = 0xFF
+    chunks = [bytes(corrupt), good.encode("ascii")]
+
+    async def mock_iter_raw_bytes(self: EnergyDongleClient) -> object:
+        for c in chunks:
+            yield c
+
+    async def run() -> None:
+        caplog.set_level(logging.WARNING)
+        client = EnergyDongleClient(
+            "127.0.0.1",
+            telegram_specification=ts.V4,
+        )
+        with patch.object(
+            EnergyDongleClient,
+            "iter_raw_bytes",
+            mock_iter_raw_bytes,
+        ):
+            out: list[Telegram] = []
+            async for telegram in client.stream_parsed(skip_parse_errors=True):
+                out.append(telegram)
+            assert len(out) == 1
+            assert isinstance(out[0], Telegram)
         assert "Skipping telegram" in caplog.text
 
     asyncio.run(run())

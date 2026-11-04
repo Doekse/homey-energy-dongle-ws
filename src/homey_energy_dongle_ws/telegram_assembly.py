@@ -1,9 +1,10 @@
 """Stream DSMR P1 wire data into complete telegram strings.
 
 Bytes from a WebSocket (or similar) are decoded once at this boundary as
-**ASCII** (strict). DSMR P1 telegrams are plain 7-bit text; this matches
-``dsmr_parser``'s socket client and keeps decoding simple and predictable.
-Non-ASCII bytes raise :exc:`UnicodeDecodeError`.
+**ASCII** with ``errors="replace"``. DSMR P1 telegrams are plain 7-bit text.
+Non-ASCII bytes become replacement characters so framing can continue instead
+of aborting the stream with :exc:`UnicodeDecodeError`. A telegram that still
+frames fails checksum validation only when the specification validates a CRC.
 
 Framing follows ``dsmr_parser``'s ``TelegramBuffer`` (``append`` then
 ``get_all``). Only **complete** telegrams are yielded; partial data stays
@@ -30,13 +31,14 @@ class TelegramAssembler:
         """Decode *chunk* and drain any complete telegrams produced after appending.
 
         Args:
-            chunk: Raw wire bytes; decoded strictly as ASCII (see module docstring).
+            chunk: Raw wire bytes; decoded as ASCII with replacement (see module
+                docstring).
 
         Yields:
             Zero or more complete telegram strings per call, depending on chunk size
             and alignment with telegram boundaries.
         """
-        text = chunk.decode(_CHUNK_ENCODING)
+        text = chunk.decode(_CHUNK_ENCODING, errors="replace")
         self._telegram_buffer.append(text)
         yield from self._telegram_buffer.get_all()
 
