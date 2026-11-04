@@ -12,6 +12,20 @@ from dsmr_parser.parsers import TelegramParser
 
 from homey_energy_dongle_ws.exceptions import TelegramChecksumError, TelegramParseError
 
+# Same version codes and specifications as ``dsmr_parser``'s serial reader; the
+# encrypted variants are left out because telegrams are not decrypted here.
+TELEGRAM_SPECIFICATIONS: Mapping[str, Mapping[str, Any]] = {
+    "5": telegram_specifications.V5,
+    "5B": telegram_specifications.BELGIUM_FLUVIUS,
+    "5L": telegram_specifications.LUXEMBOURG_SMARTY,
+    "5S": telegram_specifications.SWEDEN,
+    "Q3D": telegram_specifications.Q3D,
+    "5EONHU": telegram_specifications.EON_HUNGARY,
+    "4": telegram_specifications.V4,
+    "2.2": telegram_specifications.V2_2,
+}
+DSMR_VERSIONS: tuple[str, ...] = tuple(TELEGRAM_SPECIFICATIONS)
+
 
 def parse_telegram(
     telegram_str: str,

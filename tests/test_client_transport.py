@@ -6,6 +6,7 @@ import asyncio
 from unittest.mock import patch
 
 import pytest
+from dsmr_parser import telegram_specifications as ts
 from websockets.exceptions import ConnectionClosedError
 from websockets.frames import Close
 
@@ -220,6 +221,16 @@ def test_no_reconnect_raises_on_clean_close() -> None:
                 await client.iter_raw_bytes().__anext__()
 
     asyncio.run(run())
+
+
+def test_dsmr_version_selects_specification() -> None:
+    client = EnergyDongleClient("127.0.0.1", dsmr_version="5B")
+    assert client._telegram_specification is ts.BELGIUM_FLUVIUS
+
+
+def test_unknown_dsmr_version_raises() -> None:
+    with pytest.raises(ValueError):
+        EnergyDongleClient("127.0.0.1", dsmr_version="MSn")
 
 
 def test_from_settings_builds_same_url() -> None:

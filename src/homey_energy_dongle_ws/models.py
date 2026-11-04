@@ -36,3 +36,4 @@ class EnergyDongleConnectionSettings:
         default_factory=lambda: telegram_specifications.V5,
     )
     apply_checksum_validation: bool = True
+    dsmr_version: str | None = None

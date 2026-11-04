@@ -40,7 +40,7 @@ from homey_energy_dongle_ws.exceptions import (
     _raise_for_homey_close,
 )
 from homey_energy_dongle_ws.models import EnergyDongleConnectionSettings
-from homey_energy_dongle_ws.parser import parse_telegram
+from homey_energy_dongle_ws.parser import TELEGRAM_SPECIFICATIONS, parse_telegram
 from homey_energy_dongle_ws.telegram_assembly import TelegramAssembler
 
 logger = logging.getLogger(__name__)
@@ -117,7 +117,12 @@ class EnergyDongleClient:
         reconnect: bool = True,
         telegram_specification: Mapping[str, Any] = telegram_specifications.V5,
         apply_checksum_validation: bool = True,
+        dsmr_version: str | None = None,
     ) -> None:
+        if dsmr_version is not None:
+            if dsmr_version not in TELEGRAM_SPECIFICATIONS:
+                raise ValueError(f"Unsupported DSMR version: {dsmr_version!r}")
+            telegram_specification = TELEGRAM_SPECIFICATIONS[dsmr_version]
         self._host = host
         self._port = port
         self._path = path
@@ -149,6 +154,7 @@ class EnergyDongleClient:
             reconnect=settings.reconnect,
             telegram_specification=settings.telegram_specification,
             apply_checksum_validation=settings.apply_checksum_validation,
+            dsmr_version=settings.dsmr_version,
         )
 
     @property

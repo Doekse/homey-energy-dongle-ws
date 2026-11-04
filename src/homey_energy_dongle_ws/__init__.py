@@ -19,10 +19,11 @@ from homey_energy_dongle_ws.exceptions import (
     TelegramChecksumError,
     TelegramParseError,
 )
-from homey_energy_dongle_ws.parser import parse_telegram
+from homey_energy_dongle_ws.parser import DSMR_VERSIONS, parse_telegram
 from homey_energy_dongle_ws.telegram_assembly import TelegramAssembler
 
 __all__ = [
+    "DSMR_VERSIONS",
     "ENERGY_DONGLE_SERVICE_TYPE",
     "ConnectionLimitError",
     "ConnectionLostError",
