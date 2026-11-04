@@ -12,16 +12,23 @@ from websockets.exceptions import ConnectionClosedError, InvalidStatus
 from websockets.frames import Close
 from websockets.http11 import Response
 
-from homey_energy_dongle_ws.client import EnergyDongleClient, build_ws_url
+from homey_energy_dongle_ws.client import (
+    EnergyDongleClient,
+    _raise_for_policy_close,
+    build_ws_url,
+)
 from homey_energy_dongle_ws.constants import RECONNECT_DELAY_S
 from homey_energy_dongle_ws.exceptions import (
     ConnectionLimitError,
     ConnectionLostError,
     HomeyWebSocketError,
     LocalApiDisabledError,
-    _raise_for_homey_close,
 )
 from homey_energy_dongle_ws.models import EnergyDongleConnectionSettings
+
+
+def _policy_closed(code: int, reason: str) -> ConnectionClosedError:
+    return ConnectionClosedError(rcvd=Close(code, reason), sent=None)
 
 
 def _fake_connect(
@@ -83,35 +90,35 @@ def test_build_ws_url_ipv4_unchanged() -> None:
     assert build_ws_url("192.168.0.1") == "ws://192.168.0.1:80/ws"
 
 
-def test_raise_for_homey_close_local_api() -> None:
+def test_raise_for_policy_close_local_api() -> None:
     with pytest.raises(LocalApiDisabledError):
-        _raise_for_homey_close(1008, "Local API disabled")
+        _raise_for_policy_close(_policy_closed(1008, "Local API disabled"))
 
 
-def test_raise_for_homey_close_limit() -> None:
+def test_raise_for_policy_close_limit() -> None:
     with pytest.raises(ConnectionLimitError):
-        _raise_for_homey_close(1008, "Connection limit reached")
+        _raise_for_policy_close(_policy_closed(1008, "Connection limit reached"))
 
 
-def test_raise_for_homey_close_unknown_1008() -> None:
+def test_raise_for_policy_close_unknown_1008() -> None:
     with pytest.raises(HomeyWebSocketError):
-        _raise_for_homey_close(1008, "other policy")
+        _raise_for_policy_close(_policy_closed(1008, "other policy"))
 
 
-def test_raise_for_homey_close_non_1008_noop() -> None:
-    _raise_for_homey_close(1011, "oops")
+def test_raise_for_policy_close_non_1008_noop() -> None:
+    _raise_for_policy_close(_policy_closed(1011, "oops"))
 
 
-def test_raise_for_homey_close_sets_close_metadata_on_local_api() -> None:
+def test_raise_for_policy_close_sets_close_metadata_on_local_api() -> None:
     with pytest.raises(LocalApiDisabledError) as ctx:
-        _raise_for_homey_close(1008, "Local API disabled")
+        _raise_for_policy_close(_policy_closed(1008, "Local API disabled"))
     assert ctx.value.close_code == 1008
     assert ctx.value.close_reason == "Local API disabled"
 
 
-def test_raise_for_homey_close_sets_close_metadata_on_unknown_1008() -> None:
+def test_raise_for_policy_close_sets_close_metadata_on_unknown_1008() -> None:
     with pytest.raises(HomeyWebSocketError) as ctx:
-        _raise_for_homey_close(1008, "other policy")
+        _raise_for_policy_close(_policy_closed(1008, "other policy"))
     assert ctx.value.close_code == 1008
     assert ctx.value.close_reason == "other policy"
 

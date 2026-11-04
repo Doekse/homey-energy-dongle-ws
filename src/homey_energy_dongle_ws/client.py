@@ -36,14 +36,41 @@ from homey_energy_dongle_ws.exceptions import (
     HomeyWebSocketError,
     LocalApiDisabledError,
     TelegramParseError,
-    _close_code_and_reason,
-    _raise_for_homey_close,
 )
 from homey_energy_dongle_ws.models import EnergyDongleConnectionSettings
 from homey_energy_dongle_ws.parser import TELEGRAM_SPECIFICATIONS, parse_telegram
 from homey_energy_dongle_ws.telegram_assembly import TelegramAssembler
 
 logger = logging.getLogger(__name__)
+
+
+def _raise_for_policy_close(exc: ConnectionClosed) -> None:
+    """Map Athom **1008** close reasons to specific errors; no-op otherwise.
+
+    Other codes are treated as recoverable by the client's reconnect loop.
+    Unknown **1008** reasons still abort reconnection (policy rejection).
+    """
+    if exc.rcvd is None or exc.rcvd.code != 1008:
+        return
+    reason = exc.rcvd.reason
+    text = (reason or "").strip()
+    if "Local API disabled" in text:
+        raise LocalApiDisabledError(
+            text,
+            close_code=1008,
+            close_reason=reason,
+        ) from None
+    if "Connection limit reached" in text:
+        raise ConnectionLimitError(
+            text,
+            close_code=1008,
+            close_reason=reason,
+        ) from None
+    raise HomeyWebSocketError(
+        f"WebSocket policy violation (1008): {reason!r}",
+        close_code=1008,
+        close_reason=reason,
+    ) from None
 
 
 def _format_host_for_ws_url(host: str) -> str:
@@ -211,16 +238,9 @@ class EnergyDongleClient:
                                 return
                             yield _payload_to_bytes(message)
                     except ConnectionClosed as exc:
-                        code, reason = _close_code_and_reason(exc)
-                        _raise_for_homey_close(code, reason)
+                        _raise_for_policy_close(exc)
                     finally:
                         self._ws = None
-            except (
-                LocalApiDisabledError,
-                ConnectionLimitError,
-                HomeyWebSocketError,
-            ):
-                raise
             except (OSError, TimeoutError, InvalidHandshake) as exc:
                 if not self._reconnect and not self._stop.is_set():
                     raise ConnectionLostError(
