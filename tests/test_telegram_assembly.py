@@ -3,13 +3,7 @@
 from __future__ import annotations
 
 from homey_energy_dongle_ws.telegram_assembly import TelegramAssembler
-
-# Minimal telegram matching dsmr_parser's framing regex (``/`` … ``!`` + hex + CRLF).
-GOLDEN = (
-    "/FOO5\\2BAR\r\n"
-    "1-3:0.2.8(42)(0)(0)(0)(0)\r\n"
-    "!1234\r\n"
-)
+from samples import GOLDEN
 
 
 def test_one_telegram_split_across_chunks() -> None:

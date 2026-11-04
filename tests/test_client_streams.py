@@ -12,14 +12,7 @@ from dsmr_parser.objects import Telegram
 
 from homey_energy_dongle_ws.client import EnergyDongleClient
 from homey_energy_dongle_ws.exceptions import TelegramParseError
-from test_telegram_assembly import GOLDEN
-
-# Same sample as ``tests/test_parser.py`` — parses under ``V3``.
-GOLDEN_V3 = (
-    "/FOO5\\2BAR\r\n"
-    "1-3:0.2.8(42)(0)(0)(0)(0)\r\n"
-    "!1234\r\n"
-)
+from samples import GOLDEN
 
 
 def _split_golden_chunks() -> list[bytes]:
@@ -93,8 +86,6 @@ def test_stream_parsed_skip_parse_errors(caplog: pytest.LogCaptureFixture) -> No
 
 def test_stream_parsed_yields_telegram() -> None:
     chunks = _split_golden_chunks()
-    # GOLDEN matches assembly test; same string as GOLDEN_V3 in parser tests.
-    assert GOLDEN == GOLDEN_V3
 
     async def mock_iter_raw_bytes(self: EnergyDongleClient) -> object:
         for c in chunks:

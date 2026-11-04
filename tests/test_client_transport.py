@@ -22,6 +22,53 @@ from homey_energy_dongle_ws.exceptions import (
 from homey_energy_dongle_ws.models import EnergyDongleConnectionSettings
 
 
+def _fake_connect(
+    socket: object | None = None,
+    *,
+    raises: BaseException | None = None,
+) -> object:
+    """Return a ``connect`` stand-in that yields ``socket`` or raises ``raises``."""
+
+    class ConnectCtx:
+        async def __aenter__(self) -> object:
+            if raises is not None:
+                raise raises
+            return socket
+
+        async def __aexit__(self, *a: object) -> None:
+            return None
+
+    def mock_connect(*a: object, **k: object) -> ConnectCtx:
+        return ConnectCtx()
+
+    return mock_connect
+
+
+class _ClosedSocket:
+    def __aiter__(self) -> _ClosedSocket:
+        return self
+
+    async def __anext__(self) -> bytes:
+        raise StopAsyncIteration
+
+
+class _PolicyCloseSocket:
+    def __init__(self, reason: str) -> None:
+        self._reason = reason
+
+    def __aiter__(self) -> _PolicyCloseSocket:
+        return self
+
+    async def __anext__(self) -> bytes:
+        raise ConnectionClosedError(
+            rcvd=Close(1008, self._reason),
+            sent=None,
+        )
+
+    async def close(self) -> None:
+        return None
+
+
 def test_build_ws_url_defaults_match_constants() -> None:
     assert build_ws_url("homey.local") == "ws://homey.local:80/ws"
 
@@ -68,32 +115,12 @@ def test_raise_for_homey_close_sets_close_metadata_on_unknown_1008() -> None:
 
 
 def test_iter_raw_bytes_raises_local_api_disabled() -> None:
-    class FailingSocket:
-        def __aiter__(self) -> FailingSocket:
-            return self
-
-        async def __anext__(self) -> bytes:
-            raise ConnectionClosedError(
-                rcvd=Close(1008, "Local API disabled"),
-                sent=None,
-            )
-
-        async def close(self) -> None:
-            return None
-
-    class ConnectCtx:
-        async def __aenter__(self) -> FailingSocket:
-            return FailingSocket()
-
-        async def __aexit__(self, *a: object) -> None:
-            return None
-
-    def mock_connect(*a: object, **k: object) -> ConnectCtx:
-        return ConnectCtx()
-
     async def run() -> None:
         client = EnergyDongleClient("127.0.0.1")
-        with patch("homey_energy_dongle_ws.client.connect", mock_connect):
+        with patch(
+            "homey_energy_dongle_ws.client.connect",
+            _fake_connect(_PolicyCloseSocket("Local API disabled")),
+        ):
             agen = client.iter_raw_bytes()
             with pytest.raises(LocalApiDisabledError):
                 await agen.__anext__()
@@ -102,32 +129,12 @@ def test_iter_raw_bytes_raises_local_api_disabled() -> None:
 
 
 def test_iter_raw_bytes_raises_connection_limit() -> None:
-    class FailingSocket:
-        def __aiter__(self) -> FailingSocket:
-            return self
-
-        async def __anext__(self) -> bytes:
-            raise ConnectionClosedError(
-                rcvd=Close(1008, "Connection limit reached"),
-                sent=None,
-            )
-
-        async def close(self) -> None:
-            return None
-
-    class ConnectCtx:
-        async def __aenter__(self) -> FailingSocket:
-            return FailingSocket()
-
-        async def __aexit__(self, *a: object) -> None:
-            return None
-
-    def mock_connect(*a: object, **k: object) -> ConnectCtx:
-        return ConnectCtx()
-
     async def run() -> None:
         client = EnergyDongleClient("127.0.0.1")
-        with patch("homey_energy_dongle_ws.client.connect", mock_connect):
+        with patch(
+            "homey_energy_dongle_ws.client.connect",
+            _fake_connect(_PolicyCloseSocket("Connection limit reached")),
+        ):
             agen = client.iter_raw_bytes()
             with pytest.raises(ConnectionLimitError):
                 await agen.__anext__()
@@ -142,16 +149,6 @@ def test_reconnect_uses_reconnect_delay_after_oserror() -> None:
         sleeps.append(delay)
         await asyncio.sleep(0)
 
-    class ConnectCtx:
-        async def __aenter__(self) -> object:
-            raise OSError("connection refused")
-
-        async def __aexit__(self, *a: object) -> None:
-            return None
-
-    def mock_connect(*a: object, **k: object) -> ConnectCtx:
-        return ConnectCtx()
-
     async def run() -> None:
         client = EnergyDongleClient("127.0.0.1")
 
@@ -163,7 +160,13 @@ def test_reconnect_uses_reconnect_delay_after_oserror() -> None:
             "homey_energy_dongle_ws.client._sleep_reconnect_delay",
             record_sleep,
         )
-        with patch("homey_energy_dongle_ws.client.connect", mock_connect), sleep_patch:
+        with (
+            patch(
+                "homey_energy_dongle_ws.client.connect",
+                _fake_connect(raises=OSError("connection refused")),
+            ),
+            sleep_patch,
+        ):
             task = asyncio.create_task(wait_for_first_sleep())
             await asyncio.sleep(0)
             await asyncio.sleep(0)
@@ -177,19 +180,12 @@ def test_reconnect_uses_reconnect_delay_after_oserror() -> None:
 
 
 def test_no_reconnect_raises_on_connect_failure() -> None:
-    class ConnectCtx:
-        async def __aenter__(self) -> object:
-            raise OSError("connection refused")
-
-        async def __aexit__(self, *a: object) -> None:
-            return None
-
-    def mock_connect(*a: object, **k: object) -> ConnectCtx:
-        return ConnectCtx()
-
     async def run() -> None:
         client = EnergyDongleClient("127.0.0.1", reconnect=False)
-        with patch("homey_energy_dongle_ws.client.connect", mock_connect):
+        with patch(
+            "homey_energy_dongle_ws.client.connect",
+            _fake_connect(raises=OSError("connection refused")),
+        ):
             with pytest.raises(ConnectionLostError):
                 await client.iter_raw_bytes().__anext__()
 
@@ -197,26 +193,12 @@ def test_no_reconnect_raises_on_connect_failure() -> None:
 
 
 def test_no_reconnect_raises_on_clean_close() -> None:
-    class ClosedSocket:
-        def __aiter__(self) -> ClosedSocket:
-            return self
-
-        async def __anext__(self) -> bytes:
-            raise StopAsyncIteration
-
-    class ConnectCtx:
-        async def __aenter__(self) -> ClosedSocket:
-            return ClosedSocket()
-
-        async def __aexit__(self, *a: object) -> None:
-            return None
-
-    def mock_connect(*a: object, **k: object) -> ConnectCtx:
-        return ConnectCtx()
-
     async def run() -> None:
         client = EnergyDongleClient("127.0.0.1", reconnect=False)
-        with patch("homey_energy_dongle_ws.client.connect", mock_connect):
+        with patch(
+            "homey_energy_dongle_ws.client.connect",
+            _fake_connect(_ClosedSocket()),
+        ):
             with pytest.raises(ConnectionLostError):
                 await client.iter_raw_bytes().__anext__()
 
