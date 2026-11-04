@@ -21,7 +21,6 @@ from homey_energy_dongle_ws import EnergyDongleClient, discover_energy_dongles
 from homey_energy_dongle_ws.constants import DEFAULT_PORT, DEFAULT_WS_PATH
 from homey_energy_dongle_ws.discovery import DiscoveredEnergyDongle
 
-# Matches ``print_telegrams.py`` default ``--discover-timeout``; not user-configurable here.
 MDNS_BROWSE_TIMEOUT_S = 5.0
 
 StreamMode = Literal["telegrams", "parsed", "raw"]
@@ -59,7 +58,7 @@ def _format_device_line(i: int, d: DiscoveredEnergyDongle) -> str:
 
 
 def _prompt_mdns_device(devices: list[DiscoveredEnergyDongle]) -> tuple[str, int, str]:
-    """Let the user pick a discovered dongle; requires an mDNS-advertised WebSocket path."""
+    """Let the user pick a discovered dongle with an mDNS WebSocket path."""
     if not devices:
         print("No Energy Dongles found on the network.", file=sys.stderr)
         raise SystemExit(1)
@@ -70,7 +69,8 @@ def _prompt_mdns_device(devices: list[DiscoveredEnergyDongle]) -> tuple[str, int
         for idx, d in enumerate(devices, start=1):
             print(_format_device_line(idx, d))
         print(
-            "None advertise a WebSocket path (`p`). Enable Local API or use manual connection.",
+            "None advertise a WebSocket path (`p`). "
+            "Enable Local API or use manual connection.",
             file=sys.stderr,
         )
         raise SystemExit(1)
@@ -80,7 +80,8 @@ def _prompt_mdns_device(devices: list[DiscoveredEnergyDongle]) -> tuple[str, int
         print(_format_device_line(idx, d))
     if any(d.ws_path is None for d in devices):
         print(
-            "\nNote: entries without a path usually mean Local API is off; pick another row or use manual IP.",
+            "\nNote: entries without a path usually mean Local API is off; "
+            "pick another row or use manual IP.",
             file=sys.stderr,
         )
 
@@ -97,7 +98,8 @@ def _prompt_mdns_device(devices: list[DiscoveredEnergyDongle]) -> tuple[str, int
         chosen = devices[n - 1]
         if chosen.ws_path is None:
             print(
-                "That device has no WebSocket path in mDNS. Enable Local API or choose another.",
+                "That device has no WebSocket path in mDNS. "
+                "Enable Local API or choose another.",
                 file=sys.stderr,
             )
             continue
@@ -134,8 +136,9 @@ def _prompt_stream_mode() -> StreamMode:
 
 
 async def _print_stream(host: str, port: int, path: str, *, mode: StreamMode) -> None:
-    """Open a client and print telegram strings, parsed objects, or raw WebSocket bytes."""
+    """Open a client and print telegrams, parsed objects, or raw bytes."""
     async with EnergyDongleClient(host, port=port, path=path) as client:
+        print(f"\nConnecting to {client.ws_url} — Ctrl+C to stop.\n")
         if mode == "parsed":
             async for telegram in client.stream_parsed():
                 print(telegram, flush=True)
@@ -167,7 +170,6 @@ def main() -> None:
             raise SystemExit(1) from e
 
     mode = _prompt_stream_mode()
-    print(f"\nConnecting to ws://{host}:{port}{path} — Ctrl+C to stop.\n")
 
     try:
         asyncio.run(_print_stream(host, port, path, mode=mode))
