@@ -35,3 +35,8 @@ jobs:
 
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          # workflow_call signs the attestation as the caller
+          # (release-on-version-bump.yml). PyPI rejects that against this
+          # workflow's trusted publisher.
+          attestations: false
