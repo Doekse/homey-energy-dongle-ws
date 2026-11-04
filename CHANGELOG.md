@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.0] - 2026-11-04
+
+### Added
+
+- Parsed DSMR 2.2 and 4 telegrams expose the gas meter under the DSMR 5 M-Bus names (`MBUS_DEVICE_TYPE`, `MBUS_EQUIPMENT_IDENTIFIER` and `MBUS_METER_READING`), so consumers read gas meters the same way for every profile. The original field names, iteration and `to_json()` are unchanged.
+
 ## [0.5.0] - 2026-11-04
 
 ### Added
@@ -87,7 +93,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `TelegramAssembler` for framing complete DSMR telegrams from chunked messages.
 - `parse_telegram()` and typed errors `TelegramParseError` / `TelegramChecksumError` for DSMR parsing failures.
 
-[Unreleased]: https://github.com/Doekse/homey-energy-dongle-ws/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/Doekse/homey-energy-dongle-ws/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/Doekse/homey-energy-dongle-ws/releases/tag/v0.6.0
 [0.5.0]: https://github.com/Doekse/homey-energy-dongle-ws/releases/tag/v0.5.0
 [0.4.0]: https://github.com/Doekse/homey-energy-dongle-ws/releases/tag/v0.4.0
 [0.3.0]: https://github.com/Doekse/homey-energy-dongle-ws/releases/tag/v0.3.0
