@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- CI runs `ruff check .` so `.github` scripts are linted with the rest of the repository.
 - `scripts/interactive_stream.py` prints `client.ws_url` (bracketed IPv6) and wraps long lines for ruff.
 - README: fix nested bold/backtick markup; document `dsmr_version` / `DSMR_VERSIONS`, `reconnect=False` / `ConnectionLostError`, and that a closed client cannot be reused.
 - `EnergyDongleClient` computes `ws_url` once in `__init__` instead of rebuilding it from stored host/port/path on each access.

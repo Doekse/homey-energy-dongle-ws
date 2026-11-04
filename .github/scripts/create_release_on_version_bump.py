@@ -60,7 +60,8 @@ def changelog_fallback_link(tag: str) -> str:
     """Build a default release body when no section matches ``CHANGELOG.md``."""
     repo = os.environ.get("GITHUB_REPOSITORY", "OWNER/REPO")
     return (
-        f"See [CHANGELOG.md](https://github.com/{repo}/blob/{tag}/CHANGELOG.md) for details."
+        f"See [CHANGELOG.md](https://github.com/{repo}/blob/{tag}/CHANGELOG.md)"
+        " for details."
     )
 
 
@@ -90,7 +91,10 @@ def main() -> int:
     current_text = init_file.read_text(encoding="utf-8")
     current = read_version_from_init(current_text)
     if not current:
-        print("Could not parse __version__ from current tree; skipping.", file=sys.stderr)
+        print(
+            "Could not parse __version__ from current tree; skipping.",
+            file=sys.stderr,
+        )
         return 0
 
     parent_text = git_show_parent_file(repo_root, args.init_path)
