@@ -110,7 +110,8 @@ def _parse(parser: TelegramParser, telegram_str: str) -> Telegram:
         telegram = parser.parse(telegram_str)
     except InvalidChecksumError as exc:
         raise TelegramChecksumError("DSMR telegram checksum validation failed") from exc
-    except ParseError as exc:
+    # dsmr_parser re-raises value conversion errors (Decimal, int) unwrapped.
+    except (ParseError, ValueError, ArithmeticError) as exc:
         raise TelegramParseError("Failed to parse DSMR telegram") from exc
     _alias_legacy_mbus(telegram)
     return telegram

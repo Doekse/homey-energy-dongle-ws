@@ -58,6 +58,23 @@ def test_legacy_gas_meter_uses_mbus_names(
     assert "MBUS_METER_READING" not in dict(device)
 
 
+@pytest.mark.parametrize(
+    "line",
+    [
+        pytest.param("1-0:1.8.1(0000X.001*kWh)", id="decimal"),
+        pytest.param("0-0:96.7.21(0000X)", id="integer"),
+    ],
+)
+def test_unconvertible_value_raises_telegram_parse_error(line: str) -> None:
+    """A value dsmr_parser cannot convert maps to the library's parse error."""
+    with pytest.raises(TelegramParseError):
+        parse_telegram(
+            f"/ISk5\\2MT382-1000\r\n\r\n{line}\r\n!\r\n",
+            telegram_specification=ts.V5,
+            apply_checksum_validation=False,
+        )
+
+
 def test_garbage_raises_telegram_parse_error() -> None:
     """Unstructured text fails when the spec expects a framed telegram with CRC."""
     with pytest.raises(TelegramParseError):
