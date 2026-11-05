@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.6.1] - 2026-11-05
 
 ### Fixed
 
@@ -99,7 +99,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `TelegramAssembler` for framing complete DSMR telegrams from chunked messages.
 - `parse_telegram()` and typed errors `TelegramParseError` / `TelegramChecksumError` for DSMR parsing failures.
 
-[Unreleased]: https://github.com/Doekse/homey-energy-dongle-ws/compare/v0.6.0...HEAD
+[Unreleased]: https://github.com/Doekse/homey-energy-dongle-ws/compare/v0.6.1...HEAD
+[0.6.1]: https://github.com/Doekse/homey-energy-dongle-ws/releases/tag/v0.6.1
 [0.6.0]: https://github.com/Doekse/homey-energy-dongle-ws/releases/tag/v0.6.0
 [0.5.0]: https://github.com/Doekse/homey-energy-dongle-ws/releases/tag/v0.5.0
 [0.4.0]: https://github.com/Doekse/homey-energy-dongle-ws/releases/tag/v0.4.0
